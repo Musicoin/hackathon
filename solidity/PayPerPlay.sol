@@ -1,13 +1,14 @@
-pragma solidity ^0.4.2;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 contract PayPerPlay {
     string public constant contractVersion = "v0.7";
 
-
-    uint constant gasRequiredForFallback = 41000;
-    uint constant gasRequiredForLogging = 2000;
-    uint constant gasRequiredForSend = 3000;
+    //rw set all gas costs to zero for Skale
+    uint constant gasRequiredForFallback = 0; // 41000;
+    uint constant gasRequiredForLogging = 0; // 2000;
+    uint constant gasRequiredForSend = 0; // 3000;
     uint constant gasPerRecipient = gasRequiredForFallback + gasRequiredForSend + gasRequiredForLogging;
-    uint constant distributeOverhead = 100000;
+    uint constant distributeOverhead = 0; //100000;
 
     address public owner;
     address public createdBy;
@@ -15,7 +16,7 @@ contract PayPerPlay {
     string public artistName;
     address public artistProfileAddress;
     string public resourceUrl; // e.g. ipfs://<hash>
-    bytes32 public contentType;
+    bytes32 public contentType; 
     string public metadataUrl;
     string public imageUrl;
 
@@ -57,18 +58,18 @@ contract PayPerPlay {
 
     // "0xca35b7d915458ef540ade6068dfe2f44e8fa733c", "Title", "Arist", "0xca35b7d915458ef540ade6068dfe2f44e8fa733c", 1000000, "ipfs://resourceQcjacL3jCvY53MrU6hDBhyW4VjzQqSEoUcEPez", "audio/mp3", "ipfs://imagefbFQcjacL3jCvY53MrU6hDBhyW4VjzQqSEoUcEPez", "ipfs://metadataQcjacL3jCvY53MrU6hDBhyW4VjzQqSEoUcEPez", ["0x11111", "0x22222", "0x33333"], [1, 1, 1]
     // "0xca35b7d915458ef540ade6068dfe2f44e8fa733c", "Title", "Arist", "0xca35b7d915458ef540ade6068dfe2f44e8fa733c", 1000000, "ipfs://resourceQcjacL3jCvY53MrU6hDBhyW4VjzQqSEoUcEPez", "audio/mp3", "ipfs://imagefbFQcjacL3jCvY53MrU6hDBhyW4VjzQqSEoUcEPez", "ipfs://metadataQcjacL3jCvY53MrU6hDBhyW4VjzQqSEoUcEPez", ["0xef55bfac4228981e850936aaf042951f7b146e41", "0x11111", "0x22222", "0x33333"], [1, 1, 1, 1]
-    function PayPerPlay(
+    constructor (
             address _owner,
-            string _title,
-            string _artistName,
+            string memory _title,
+            string memory _artistName,
             address _artistProfileAddress,
             uint _weiPerPlay,
-            string _resourceUrl,
-            bytes32 _contentType,
-            string _imageUrl,
-            string _metadataUrl,
-            address[] _contributors,
-            uint[] _contributorShares) {
+            string memory _resourceUrl,
+            bytes32 _contentType, 
+            string memory _imageUrl,
+            string memory _metadataUrl,
+            address[] memory _contributors,
+            uint[] memory _contributorShares) {
         title = _title;
         artistName = _artistName;
         contentType = _contentType;
@@ -89,21 +90,21 @@ contract PayPerPlay {
     }
 
     modifier adminOnly {
-        if (msg.sender != owner) throw;
+        require(msg.sender == owner, "Caller is not owner");
         _;
     }
 
-    function () payable {
+    receive() external payable {
         // if possible, forward the balance on to recipients
-        if (msg.gas > distributionGasEstimate) {
+        if (gasleft() > distributionGasEstimate) {
             distributePayment(msg.value);
         }
         else {
-            distributionPending(msg.gas, msg.value);
+            emit distributionPending(gasleft(), msg.value);
         }
     }
 
-    function tip() payable {
+    function tip() public payable {
         distributePayment(msg.value);
 
         tipCount++;
@@ -111,27 +112,27 @@ contract PayPerPlay {
         totalEarned += msg.value;
     }
 
-    function getContributorsLength() public constant returns(uint) {
+    function getContributorsLength() public view returns(uint) {
         return contributors.length;
     }
 
-    function play() payable {
-        if (msg.value < weiPerPlay) throw;
+    function play() public payable {
+        require(msg.value >= weiPerPlay, "Insufficient funds");
 
         // users can only purchase one play at a time.  don't steal their money
-        var toRefund = msg.value - weiPerPlay;
+        uint toRefund = msg.value - weiPerPlay;
 
         // I believe there is minimal risk in calling the sender directly, as it
         // should not be able to stall the contract for any other callers.
-        if (toRefund > 0 && !msg.sender.send(toRefund)) {
-            throw;
+        if (toRefund > 0) {
+            require(payable(msg.sender).send(toRefund),"Refund failed");
         }
 
         distributePayment(weiPerPlay);
         totalEarned += weiPerPlay;
         playCount++;
 
-        playEvent(playCount);
+        emit playEvent(playCount);
     }
 
     /*
@@ -150,12 +151,14 @@ contract PayPerPlay {
      * Also note that I am not using send, because if the calling contract requires a lot of gas, I would
      * like the caller to be able to supply as much as needed.
      */
-    function collectPendingPayment(address recipient) {
-        var toSend = clearPendingPayment(recipient);
+    function collectPendingPayment(address recipient) public {
+        uint toSend = clearPendingPayment(recipient);
 
         // using call instead of send to allow gas forwarding
-        if (toSend > 0 && !recipient.call.value(toSend)()) {
-            throw;
+//        if (toSend > 0 && !recipient.call.value(toSend)()) {
+        if (toSend > 0) {
+            (bool success,  ) =  recipient.call{value: toSend}("");
+            require(success, "Failed to forward value.");
         }
     }
 
@@ -166,66 +169,67 @@ contract PayPerPlay {
      * the provided address.  This is provided in case the recipient cannot
      * recieve funds (failed contract)
      */
-    function transferPendingPayments(address recipient, address destination) adminOnly {
-        var toSend = clearPendingPayment(recipient);
+    function transferPendingPayments(address recipient, address destination) public adminOnly {
+        uint toSend = clearPendingPayment(recipient);
 
         // using call instead of send to allow gas forwarding
-        if (toSend > 0 && !destination.call.value(toSend)()) {
-            throw;
+        if (toSend > 0) {
+            (bool success,  ) =  destination.call{value: toSend}("");
+            require(success, "Failed to forward value.");
         }
+
     }
 
-    function transferOwnership(address newOwner) adminOnly {
+    function transferOwnership(address newOwner) public adminOnly {
         address oldOwner = owner;
         owner = newOwner;
-        transferEvent(oldOwner, newOwner);
+        emit transferEvent(oldOwner, newOwner);
     }
 
-    function updateTitle(string newTitle) adminOnly {
+    function updateTitle(string memory newTitle) public adminOnly {
         string memory oldTitle = newTitle;
         title = newTitle;
-        titleUpdateEvent(oldTitle, newTitle);
+        emit titleUpdateEvent(oldTitle, newTitle);
     }
 
-    function updateArtistName(string newArtistName) adminOnly {
+    function updateArtistName(string memory newArtistName) public adminOnly {
         string memory oldArtistName = newArtistName;
         artistName = newArtistName;
-        artistNameUpdateEvent(oldArtistName, newArtistName);
+        emit artistNameUpdateEvent(oldArtistName, newArtistName);
     }
 
-    function updateResourceUrl(string newResourceUrl) adminOnly {
+    function updateResourceUrl(string memory newResourceUrl) public adminOnly {
         string memory oldResourceUrl = resourceUrl;
         resourceUrl = newResourceUrl;
-        resourceUpdateEvent(oldResourceUrl, newResourceUrl);
+        emit resourceUpdateEvent(oldResourceUrl, newResourceUrl);
     }
 
-    function updateImageUrl(string newImageUrl) adminOnly {
+    function updateImageUrl(string memory newImageUrl) public adminOnly {
         string memory oldImageUrl = imageUrl;
         imageUrl = newImageUrl;
-        imageUpdateEvent(oldImageUrl, newImageUrl);
+        emit imageUpdateEvent(oldImageUrl, newImageUrl);
     }
 
-    function updateArtistAddress(address newArtistAddress) adminOnly {
+    function updateArtistAddress(address newArtistAddress) public adminOnly {
         address oldArtistAddress = artistProfileAddress;
         artistProfileAddress = newArtistAddress;
-        artistProfileAddressUpdateEvent(oldArtistAddress, newArtistAddress);
+        emit artistProfileAddressUpdateEvent(oldArtistAddress, newArtistAddress);
     }
 
-    function updateMetadataUrl(string newMetadataUrl) adminOnly {
+    function updateMetadataUrl(string memory newMetadataUrl) public adminOnly {
         string memory oldMetadataUrl = metadataUrl;
         metadataUrl = newMetadataUrl;
         metadataVersion++;
-        metadataUpdateEvent(oldMetadataUrl, newMetadataUrl);
+        emit metadataUpdateEvent(oldMetadataUrl, newMetadataUrl);
     }
 
     /*
      * Updates share allocations.  All old allocations are over written
      */
     function updateLicense(uint _weiPerPlay,
-        address[] _contributors, uint[] _contributorShares) adminOnly {
+        address[] memory _contributors, uint[] memory _contributorShares) public adminOnly {
 
-        if (_contributors.length != _contributorShares.length) throw;
-
+        require (_contributors.length == _contributorShares.length, 'The # of contributors does not match the # of contributor shares.');
         weiPerPlay = _weiPerPlay;
         contributors = _contributors;
         contributorShares = _contributorShares;
@@ -238,35 +242,34 @@ contract PayPerPlay {
         // sanity checks
 
         // watch out for division by 0 if totalShares == 0
-        if (totalShares == 0 && contributors.length > 0)
-            throw;
+        require(!(totalShares == 0 && contributors.length > 0), "Total shares must be more than 0");
 
         distributionGasEstimate = estimateGasRequired(contributors.length);
         licenseVersion++;
-        licenseUpdateEvent(licenseVersion);
+        emit licenseUpdateEvent(licenseVersion);
     }
 
-    function distributeBalance() adminOnly {
-        distributePayment(this.balance);
+    function distributeBalance() public adminOnly {
+        distributePayment(address(this).balance);
     }
 
-    function kill(bool _distributeBalanceFirst) adminOnly {
+    function kill(bool _distributeBalanceFirst) public adminOnly {
         if (_distributeBalanceFirst) {
             distributeBalance(); // is there any risk here?
         }
-        selfdestruct(owner);
+        selfdestruct(payable(owner));
     }
 
     /*** internal ***/
     bool private distributionReentryLock;
     modifier withDistributionLock {
-        if (distributionReentryLock) throw;
+        require (!distributionReentryLock, "Re-entry is locked") ;
         distributionReentryLock = true;
         _;
         distributionReentryLock = false;
     }
 
-    function estimateGasRequired(uint _recipients) internal constant returns(uint) {
+    function estimateGasRequired(uint _recipients) internal pure returns(uint) {
         return distributeOverhead + _recipients*gasPerRecipient;
     }
 
@@ -277,13 +280,13 @@ contract PayPerPlay {
     }
 
     function distributePaymentTo(uint _total, uint cIdx) internal {
-        var amount = (contributorShares[cIdx] * _total) / totalShares;
-        var contributorAddress = contributors[cIdx];
+        uint amount = (contributorShares[cIdx] * _total) / totalShares;
+        address contributorAddress = contributors[cIdx];
 
         // estimate the amount of gas needed for the rest of the contributors
         // (not including this one), then add on the gas we might need if the call
         // fails.
-        var reserved = estimateGasRequired(contributors.length-cIdx-1) + gasRequiredForFallback;
+        uint reserved = estimateGasRequired(contributors.length-cIdx-1) + gasRequiredForFallback;
         if (amount > 0 && !trySend(contributorAddress, amount, reserved)) {
             addPendingPayment(contributorAddress, amount);
         }
@@ -294,24 +297,26 @@ contract PayPerPlay {
      * is also a contract.  Otherwise, just call send
      */
     function trySend(address recipient, uint amount, uint reserved) internal returns(bool) {
-        if (msg.gas > reserved) {
-           return recipient.call.gas(msg.gas - reserved).value(amount)();
+        if (gasleft() > reserved) {
+           (bool success,  ) =  recipient.call{gas:(gasleft() - reserved), value:amount}("");
+           return success;
         }
         else {
-           return recipient.send(amount);
+           return payable(recipient).send(amount);
         }
     }
 
     function addPendingPayment(address recipient, uint amount) internal {
         pendingPayment[recipient] += amount;
         totalPending += amount;
-        paymentPending(recipient, amount);
+        emit paymentPending(recipient, amount);
     }
 
     function clearPendingPayment(address recipient) internal returns(uint) {
-        var amount = pendingPayment[recipient];
+        uint amount = pendingPayment[recipient];
         pendingPayment[recipient] = 0;
         totalPending -= amount;
         return amount;
     }
 }
+
