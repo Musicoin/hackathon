@@ -1,9 +1,10 @@
-pragma solidity ^0.4.2;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 contract Artist {
     string public contractVersion = "v0.3";
     address public owner;
     address public createdBy;
-    address public forwardingAddress = 0x0;
+    address payable public forwardingAddress;   
     string public artistName;
     string public imageUrl;
     string public descriptionUrl;
@@ -16,104 +17,104 @@ contract Artist {
     uint public followers = 0;
 
     modifier onlyOwner {
-        if (msg.sender != owner) throw;
+        require(msg.sender == owner, "Caller is not owner");
         _;
     }
 
     // "0xca35b7d915458ef540ade6068dfe2f44e8fa733c", "Test", "Test", "Test", "test"
-    function Artist(
+    constructor (
         address _owner,
-        string _artistName,
-        string _imageUrl,
-        string _descriptionUrl,
-        string _socialUrl) {
+        string memory _artistName,
+        string memory _imageUrl,
+        string memory _descriptionUrl,
+        string memory _socialUrl) {
         owner = _owner;
         createdBy = msg.sender;
         artistName = _artistName;
         imageUrl = _imageUrl;
         descriptionUrl = _descriptionUrl;
         socialUrl = _socialUrl;
+        forwardingAddress = payable(address(0));
     }
 
-    function () payable {
+    receive () external payable {
         // accept payments
-        if (forwardingAddress != 0x0) {
+        if (forwardingAddress != address(0)) {
             if (!forwardingAddress.send(msg.value)) {
                 // ok, just hold onto it in this contract
             }
         }
     }
 
-    function tip() payable {
+    function tip() public payable {
         tipCount++;
         tipTotal += msg.value;
-        if (!owner.send(msg.value)) {
-            throw;
-        }
+        require(msg.sender == owner, "Caller is not owner");
+        //rw why is this check done last instead of using the modifier?
     }
 
-    function follow() {
+    function follow() public {
         if (!following[msg.sender]) {
             following[msg.sender] = true;
             followers++;
         }
     }
 
-    function unfollow() {
+    function unfollow() public {
         if (following[msg.sender]) {
             following[msg.sender] = false;
             followers--;
         }
     }
 
-    function payOut(address recipient, uint amount) onlyOwner {
-        if (!recipient.send(amount)) {
-            throw;
-        }
+    function payOut(address payable recipient, uint amount) public onlyOwner {
+        require(recipient.send(amount), "payout failed"); 
     }
 
-    function payOutBalance(address recipient) onlyOwner {
-        if (!recipient.send(this.balance)) {
-            throw;
-        }
+    function payOutBalance(address payable recipient) public onlyOwner {
+        require (recipient.send(address(this).balance), "payout balance failed");
     }
 
-    function updateDetails(
-        string _artistName,
-        string _imageUrl,
-        string _descriptionUrl,
-        string _socialUrl) onlyOwner {
+    function updateDetails (
+        string memory _artistName,
+        string memory _imageUrl,
+        string memory _descriptionUrl,
+        string memory _socialUrl) public onlyOwner {
         artistName = _artistName;
         imageUrl = _imageUrl;
         descriptionUrl = _descriptionUrl;
         socialUrl = _socialUrl;
     }
 
-    function removeForwardingAddress() onlyOwner {
-        forwardingAddress = 0x0;
+    function removeForwardingAddress() public onlyOwner {
+        forwardingAddress = payable(address(0));
     }
 
-    function setForwardingAddress(address _forwardingAddress) onlyOwner {
+    function setForwardingAddress(address payable _forwardingAddress) public onlyOwner {
         forwardingAddress = _forwardingAddress;
     }
 
-    function setOwner(address _owner) onlyOwner {
+    function setOwner(address _owner) public onlyOwner {
         owner = _owner;
     }
 
-    function setArtistName(string _artistName) onlyOwner {
+    function setArtistName(string memory _artistName) public onlyOwner {
         artistName = _artistName;
     }
 
-    function setImageUrl(string _imageUrl) onlyOwner {
+    function setImageUrl(string memory _imageUrl) public onlyOwner {
         imageUrl = _imageUrl;
     }
 
-    function setDescriptionUrl(string _descriptionUrl) onlyOwner {
+    function setDescriptionUrl(string memory _descriptionUrl) public onlyOwner {
         descriptionUrl = _descriptionUrl;
     }
 
-    function setSocialUrl(string _socialUrl) onlyOwner {
+    function setSocialUrl(string memory _socialUrl) public onlyOwner {
         socialUrl = _socialUrl;
+    }
+
+    function testReturn () public pure returns (uint) {
+        return 123456;
     }
 }
