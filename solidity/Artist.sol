@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
+
+import "./MUSIC_Schain.sol";
+
 contract Artist {
-    string public contractVersion = "v0.3";
+    Music private musicToken;
+
+    string public contractVersion = "v0.3"; //rw what version does this now need to be?
     address public owner;
     address public createdBy;
     address payable public forwardingAddress;   
@@ -9,7 +14,6 @@ contract Artist {
     string public imageUrl;
     string public descriptionUrl;
     string public socialUrl;
-
 
     uint public tipCount = 0;
     uint public tipTotal = 0;
@@ -39,6 +43,7 @@ contract Artist {
 
     receive () external payable {
         // accept payments
+        //rw: This accepts ETH payments.  The tip function receives $MUSIC so the payouts need to handle both tokens
         if (forwardingAddress != address(0)) {
             if (!forwardingAddress.send(msg.value)) {
                 // ok, just hold onto it in this contract
@@ -46,11 +51,13 @@ contract Artist {
         }
     }
 
-    function tip() public payable {
+    function tip(uint _tipAmount) public payable {
         tipCount++;
-        tipTotal += msg.value;
-        require(msg.sender == owner, "Caller is not owner");
-        //rw why is this check done last instead of using the modifier?
+        tipTotal += _tipAmount;
+        //tipTotal += msg.value;  //rw removed. The tip will now be in $MUSIC, not ETH.
+        //rw this does not collect any ETH sent with the msg.value object.  Assuming that will not happen from the UI/PlayerApp
+        //rw transferFrom will check the sender's wallet has enough $MUSIC to tip and then sends it to the owner of this contract
+        require(musicToken.transferFrom(msg.sender, owner, _tipAmount)); //rw why is this sent to the owner and not the forwardingAddress?
     }
 
     function follow() public {
@@ -68,11 +75,16 @@ contract Artist {
     }
 
     function payOut(address payable recipient, uint amount) public onlyOwner {
-        require(recipient.send(amount), "payout failed"); 
+        //rw updated to send $MUSIC instead of ETH
+        //require(recipient.send(amount), "payout failed"); 
+        require(musicToken.transfer(recipient, amount), "payout failed"); //rw why is this sent to the recipient and not the forwardingAddress?
     }
 
     function payOutBalance(address payable recipient) public onlyOwner {
+        //rw Although should only be using $MUSIC, the fallback receive function accepts ETH, so this pay out function will return the total balance of both ETH and $MUSIC
         require (recipient.send(address(this).balance), "payout balance failed");
+        //rw updated to send the $MUSIC balance to the recipient from this contract (owner) as well
+        require(musicToken.transfer(recipient, musicToken.balanceOf(owner)), "payout failed"); //rw why is this sent to the recipient and not the forwardingAddress?
     }
 
     function updateDetails (
@@ -112,9 +124,5 @@ contract Artist {
 
     function setSocialUrl(string memory _socialUrl) public onlyOwner {
         socialUrl = _socialUrl;
-    }
-
-    function testReturn () public pure returns (uint) {
-        return 123456;
     }
 }
