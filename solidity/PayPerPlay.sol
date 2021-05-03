@@ -94,14 +94,6 @@ contract PayPerPlay {
         _;
     }
 
-    receive() external payable {
-        //rw: This accepts ETH payments.  The tip function receives $MUSIC so the payouts need to handle both tokens
-        //rw: Assuming gasleft if not an issue with Skale network but leaving these checks in as the gas cost constants were set to 0 above and this still works as 0
-
-        // if possible, forward the balance on to recipients
-        distributePayment(msg.value);
-    }
-
     function tip(uint _tipAmount) public payable {
         //rw This will now be $MUSIC in _tipAmount not msg.value
         distributePayment(_tipAmount); // This will now be $MUSIC not msg.value
