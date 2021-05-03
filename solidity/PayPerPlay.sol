@@ -96,7 +96,7 @@ contract PayPerPlay {
 
     function tip(uint _tipAmount) public payable {
         //rw This will now be $MUSIC in _tipAmount not msg.value
-        distributePayment(_tipAmount); // This will now be $MUSIC not msg.value
+        distributePayment(_tipAmount);
 
         tipCount++;
         totalTipped += _tipAmount;
@@ -115,7 +115,7 @@ contract PayPerPlay {
     }
     
     function play() public payable {
-        //rw This will now be $MUSIC in _pppAmount not msg.value.  
+        //rw This will now be $MUSIC not ETH  
         //rw requiring _pppAmount changes the function signature and potentially breaks any connecting apps so this one is retained but unsafe for users playing malicious tracks as they have no control over how much $MUSIC they are sending now
         require(musicToken.balanceOf(msg.sender) >= musicPerPlay, "Insufficient funds in account");
 
