@@ -1,0 +1,23 @@
+{
+  "name": "migration",
+  "version": "1.0.0",
+  "description": "Scripts to migrate Musicoin to the Skale network",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "migrate": "node --require dotenv/config scripts/migrate.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@truffle/hdwallet-provider": "^1.0.38",
+    "bcrypt-nodejs": "^0.0.3",
+    "fastest-validator": "^1.10.1",
+    "mongoose": "^5.10.3",
+    "web3": "^1.2.9"
+  },
+  "devDependencies": {
+    "dotenv": "^8.2.0"
+  }
+}
