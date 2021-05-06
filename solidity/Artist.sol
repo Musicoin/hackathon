@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "./MUSICWrapper.sol";
 import "./MUSIC_Schain.sol";
 
-contract Artist {
-    Music private musicToken;
+contract Artist is MUSICWrapper {
+    Music public musicToken;
 
     string public contractVersion = "v0.3"; //rw what version does this now need to be?
     address public owner;
     address public createdBy;
-    address payable public forwardingAddress;   
+    address payable public forwardingAddress;  //rw is this only for sending coin to an address when the. receive function is used?
     string public artistName;
     string public imageUrl;
     string public descriptionUrl;
@@ -26,12 +27,19 @@ contract Artist {
     }
 
     // "0xca35b7d915458ef540ade6068dfe2f44e8fa733c", "Test", "Test", "Test", "test"
+    
+    /**
+     * Constructor for the Artist contract.
+     * Assumes validation logic for artist details is managed by the Music player application.
+     * Address objects will fail by the EVM if not valid.
+     */
     constructor (
         address _owner,
         string memory _artistName,
         string memory _imageUrl,
         string memory _descriptionUrl,
         string memory _socialUrl) {
+            
         owner = _owner;
         createdBy = msg.sender;
         artistName = _artistName;
@@ -39,11 +47,16 @@ contract Artist {
         descriptionUrl = _descriptionUrl;
         socialUrl = _socialUrl;
         forwardingAddress = payable(address(0));
+        musicToken = getMusicToken();
     }
 
     receive () external payable {
         // accept payments
         //rw: This accepts ETH payments.  The tip function receives $MUSIC so the payouts need to handle both tokens
+        //rw: Can this function be removed since we dont need ETH anymore?  The ETH EVN documentation seems to indicate this is a required function though
+        //https://docs.soliditylang.org/en/v0.6.1/contracts.html
+        
+        // Receive ETH if it is not from the benefactor of this contract, the forwardingAddress
         if (forwardingAddress != address(0)) {
             if (!forwardingAddress.send(msg.value)) {
                 // ok, just hold onto it in this contract
@@ -51,6 +64,8 @@ contract Artist {
         }
     }
 
+    event tipping(address tipper, address benefactor, uint tip);
+    
     function tip(uint _tipAmount) public payable {
         tipCount++;
         tipTotal += _tipAmount;
@@ -58,6 +73,7 @@ contract Artist {
         //rw this does not collect any ETH sent with the msg.value object.  Assuming that will not happen from the UI/PlayerApp
         //rw transferFrom will check the sender's wallet has enough $MUSIC to tip and then sends it to the owner of this contract
         require(musicToken.transferFrom(msg.sender, owner, _tipAmount)); //rw why is this sent to the owner and not the forwardingAddress?
+        emit tipping(msg.sender, owner, _tipAmount);
     }
 
     function follow() public {
