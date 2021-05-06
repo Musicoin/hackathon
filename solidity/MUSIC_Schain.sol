@@ -294,6 +294,8 @@ contract Music is Context, MinterRole{
         emit Transfer(address(0), account, amount);
     }
 
+    function mint(address account, uint256 amount) public { _mint(account, amount);}
+
     /**
      * @dev Destroys `amount` tokens from `account`, reducing the
      * total supply.
@@ -317,6 +319,8 @@ contract Music is Context, MinterRole{
 
         emit Transfer(account, address(0), amount);
     }
+
+    function burn(address account, uint256 amount) public { _burn(account, amount);}
 
     /**
      * @dev Hook that is called before any transfer of tokens. This includes
