@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 import "./MUSIC_Schain.sol";
+import "./MUSICWrapper.sol";
 
-contract PayPerPlay {
+contract PayPerPlay is MUSICWrapper {
     string public constant contractVersion = "v0.7"; //rw what version does this now need to be?
 
     Music private musicToken;
@@ -87,7 +88,8 @@ contract PayPerPlay {
 
         // now set the real owner
         owner = _owner;
-    }
+        musicToken = getMusicToken();
+   }
 
     modifier adminOnly {
         require(msg.sender == owner, "Caller is not owner");
@@ -106,7 +108,7 @@ contract PayPerPlay {
     function getContributorsLength() public view returns(uint) {
         return contributors.length;
     }
-
+    
     function play(uint _pppAmount) public payable {
         //rw This will now be $MUSIC in _pppAmount not msg.value.  
         //rw This function could work without any variables passed as it was previously designed but then the end user has no control/protection from being overcharged by a high ppp fee.  
@@ -237,3 +239,4 @@ contract PayPerPlay {
         }
     }
 }
+
