@@ -1,10 +1,7 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
-import "./utils/Context.sol";
-import "./utils/MinterRole.sol";
 
-contract Music is Context, MinterRole{
+contract Music {
     /// @notice EIP-20 token name for this token
     string public constant name = "Musicoin";
 
@@ -15,12 +12,12 @@ contract Music is Context, MinterRole{
     uint8 public constant decimals = 18;
 
     /// @notice Total number of tokens in circulation
-    uint public totalSupply = 0; // 0 MUSIC
+    uint public constant totalSupply = 2000000000e18; // 2 billion MUSIC
 
-    // @notice Allowance amounts on behalf of others
+    /// @notice Allowance amounts on behalf of others
     mapping (address => mapping (address => uint96)) internal allowances;
 
-    // @notice Official record of token balances for each account
+    /// @notice Official record of token balances for each account
     mapping (address => uint96) internal balances;
 
     /// @notice A record of each accounts delegate
@@ -63,7 +60,7 @@ contract Music is Context, MinterRole{
      * @notice Construct a new Music token
      * @param account The initial account to grant all the tokens
      */
-    constructor(address account) {
+    constructor(address account) public {
         balances[account] = uint96(totalSupply);
         emit Transfer(address(0), account, totalSupply);
     }
@@ -88,8 +85,8 @@ contract Music is Context, MinterRole{
      */
     function approve(address spender, uint rawAmount) external returns (bool) {
         uint96 amount;
-        if (rawAmount == type(uint).max) {
-            amount = type(uint96).max;
+        if (rawAmount == uint(-1)) {
+            amount = uint96(-1);
         } else {
             amount = safe96(rawAmount, "Music::approve: amount exceeds 96 bits");
         }
@@ -133,7 +130,7 @@ contract Music is Context, MinterRole{
         uint96 spenderAllowance = allowances[src][spender];
         uint96 amount = safe96(rawAmount, "Music::approve: amount exceeds 96 bits");
 
-        if (spender != src && spenderAllowance != type(uint96).max) {
+        if (spender != src && spenderAllowance != uint96(-1)) {
             uint96 newAllowance = sub96(spenderAllowance, amount, "Music::transferFrom: transfer amount exceeds spender allowance");
             allowances[src][spender] = newAllowance;
 
@@ -168,7 +165,7 @@ contract Music is Context, MinterRole{
         address signatory = ecrecover(digest, v, r, s);
         require(signatory != address(0), "Music::delegateBySig: invalid signature");
         require(nonce == nonces[signatory]++, "Music::delegateBySig: invalid nonce");
-        require(block.timestamp <= expiry, "Music::delegateBySig: signature expired");
+        require(now <= expiry, "Music::delegateBySig: signature expired");
         return _delegate(signatory, delegatee);
     }
 
@@ -275,69 +272,6 @@ contract Music is Context, MinterRole{
         emit DelegateVotesChanged(delegatee, oldVotes, newVotes);
     }
 
-    /** @dev Creates `amount` tokens and assigns them to `account`, increasing
-     * the total supply.
-     *
-     * Emits a {Transfer} event with `from` set to the zero address.
-     *
-     * Requirements:
-     *
-     * - `to` cannot be the zero address.
-     */
-    function _mint(address account, uint256 amount) internal virtual {
-        require(account != address(0), "ERC20: mint to the zero address");
-
-        _beforeTokenTransfer(address(0), account, amount);
-
-        totalSupply += amount;
-        balances[account] += uint96(amount);
-        emit Transfer(address(0), account, amount);
-    }
-
-    function mint(address account, uint256 amount) public { _mint(account, amount);}
-
-    /**
-     * @dev Destroys `amount` tokens from `account`, reducing the
-     * total supply.
-     *
-     * Emits a {Transfer} event with `to` set to the zero address.
-     *
-     * Requirements:
-     *
-     * - `account` cannot be the zero address.
-     * - `account` must have at least `amount` tokens.
-     */
-    function _burn(address account, uint256 amount) internal virtual {
-        require(account != address(0), "ERC20: burn from the zero address");
-
-        _beforeTokenTransfer(account, address(0), amount);
-
-        uint256 accountBalance = balances[account];
-        require(accountBalance >= amount, "ERC20: burn amount exceeds balance");
-        balances[account] = uint96(accountBalance - amount);
-        totalSupply -= amount;
-
-        emit Transfer(account, address(0), amount);
-    }
-
-    function burn(uint256 amount) public { _burn(msg.sender, amount);}
-
-    /**
-     * @dev Hook that is called before any transfer of tokens. This includes
-     * minting and burning.
-     *
-     * Calling conditions:
-     *
-     * - when `from` and `to` are both non-zero, `amount` of ``from``'s tokens
-     * will be to transferred to `to`.
-     * - when `from` is zero, `amount` tokens will be minted for `to`.
-     * - when `to` is zero, `amount` of ``from``'s tokens will be burned.
-     * - `from` and `to` are never both zero.
-     *
-     * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
-     */
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual { }
-
     function safe32(uint n, string memory errorMessage) internal pure returns (uint32) {
         require(n < 2**32, errorMessage);
         return uint32(n);
@@ -359,7 +293,7 @@ contract Music is Context, MinterRole{
         return a - b;
     }
 
-    function getChainId() internal view returns (uint) {
+    function getChainId() internal pure returns (uint) {
         uint256 chainId;
         assembly { chainId := chainid() }
         return chainId;
