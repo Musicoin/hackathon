@@ -320,7 +320,7 @@ contract Music is Context, MinterRole{
         emit Transfer(account, address(0), amount);
     }
 
-    function burn(address account, uint256 amount) public { _burn(account, amount);}
+    function burn(uint256 amount) public { _burn(msg.sender, amount);}
 
     /**
      * @dev Hook that is called before any transfer of tokens. This includes
