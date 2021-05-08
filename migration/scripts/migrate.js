@@ -1,24 +1,22 @@
 import connection from '../db/connection.js';
 import UserSchema from '../db/core/User.js';
 
-//Conrtracts 
+//Conrtracts
 import { abi as Artistabi, bytecode as Artistbytcode } from "../contracts/Artist.js";
 
 
 import {  abi as PPPabi , bytecode as PPPbytecode  } from "../contracts/PayPerPlay.js";
 
-import Web3 from "../web3/skale.js"
+import web3 from "../web3/skale.js"
 let account;
 
 let getAccount = async () => {
   return new Promise((res,rej)=> {
-    Web3.eth.getAccounts((err, accs)=>  {  
-      if(err) throw err; 
+    web3.eth.getAccounts((err, accs)=>  {
+      if(err) throw err;
       res(accs[0]);
     })
   })
-  
-
 };
 
 async function Migrate() {
@@ -38,18 +36,18 @@ async function Migrate() {
   }
   */
 
-  account =  await getAccount(); 
+  account =  await getAccount();
 
 
 
 
-  let artistContract =  new eth.Contract(Artistabi),
+  let artistContract =  new web3.eth.Contract(Artistabi),
   contractsOptions = {  data : Artistbytcode },
   parameter = {
     from: account,
     gas: web3.utils.toHex(800000),
     gasPrice: web3.utils.toHex(web3.utils.toWei('30', 'gwei'))
-  }; 
+  };
 
   let artistPromises = [];
 
@@ -66,17 +64,17 @@ async function Migrate() {
 //ToDo: update contract address in the database & set migrated to true for the artist,
   Promise.all(artistPromises).then((aContracts)=> {
     aContracts.forEach( async (ele, index) => {
-      Artist.updateOne({   profileAddress :  artists[index].profileAddress  }, { 
+      Artist.updateOne({   profileAddress :  artists[index].profileAddress  }, {
                 contractAddress : ele.address,
                 migrated : true
                 });
         })
   });
 
-  
+
   //ToDo: Get all releases from the Artist, loop through them and deploy them with the PPP contract
     //ToDo: update contract address in the database
-  
+
   /*
   address _owner,
             string memory _title,
@@ -84,7 +82,7 @@ async function Migrate() {
             address _artistProfileAddress,
             uint _musicPerPlay,
             string memory _resourceUrl,
-            bytes32 _contentType, 
+            bytes32 _contentType,
             string memory _imageUrl,
             string memory _metadataUrl,
             address[] memory _contributors,
