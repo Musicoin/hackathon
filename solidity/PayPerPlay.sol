@@ -66,14 +66,14 @@ contract PayPerPlay is MUSICWrapper {
             address _artistProfileAddress,
             uint _musicPerPlay,
             string memory _resourceUrl,
-            bytes32 _contentType, 
+            //bytes32 _contentType, 
             string memory _imageUrl,
             string memory _metadataUrl,
             address[] memory _contributors,
             uint[] memory _contributorShares) {
         title = _title;
         artistName = _artistName;
-        contentType = _contentType;
+ //       contentType = _contentType;
         artistProfileAddress = _artistProfileAddress;
 
         createdBy = msg.sender;
@@ -123,6 +123,7 @@ contract PayPerPlay is MUSICWrapper {
 
         //rw only use the required musicPerPlay amount and not what was sent in _pppAmount in case it was more than musicPerPlay
         distributePayment(musicPerPlay);
+
         totalEarned += musicPerPlay;
         playCount++;
 
@@ -231,11 +232,10 @@ contract PayPerPlay is MUSICWrapper {
     }
 
     function distributePaymentTo(uint _total, uint cIdx) internal {
-        uint amount = (contributorShares[cIdx] * _total) / totalShares;
-        address contributorAddress = contributors[cIdx];
+        uint amount = uint((contributorShares[cIdx] * _total) / totalShares);
 
         if (amount > 0) {
-            musicToken.transfer(contributorAddress, amount);
+            require(musicToken.transferFrom(msg.sender, contributors[cIdx], amount));
         }
     }
 }
