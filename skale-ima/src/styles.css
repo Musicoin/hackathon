@@ -1,0 +1,54 @@
+body {
+  background-color: #000000;
+  color: #ffffff;
+  overflow-x: hidden;
+}
+
+.App {
+  margin-top: 50px;
+  font-family: sans-serif;
+  text-align: center;
+  color: #ffffff;
+}
+
+.dataBox {
+  min-height: 110px;
+}
+
+textarea {
+  background-color: #000000;
+  width: 90%;
+  height: 130px;
+  color: #ffffff;
+  font-size: 11px;
+}
+
+input {
+  width: 150px;
+  margin: 0 0 0 15px;
+  font-size: 14px;
+  text-align: center;
+  color: white;
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-bottom: 1px solid #d6dc20;
+}
+
+h6 {
+  color: #d6dc20;
+}
+
+.border-top-blue {
+  border-top: solid 1px #29abe1;
+}
+button {
+  border: 1px solid #d6dc20;
+  border-radius: 5px;
+  background-color: transparent;
+  margin: 0 10px 30px;
+  font-family: "Space Mono", sans-serif;
+  color: #ffffff;
+  font-size: 16px;
+  text-align: left;
+  z-index: 10;
+}

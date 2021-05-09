@@ -15,7 +15,7 @@ contract Music is Context, MinterRole{
     uint8 public constant decimals = 18;
 
     /// @notice Total number of tokens in circulation
-    uint public totalSupply = 10000000 * 1000000000000000000; // 0 MUSIC
+    uint public totalSupply = 0; // 0 MUSIC
 
     // @notice Allowance amounts on behalf of others
     mapping (address => mapping (address => uint96)) internal allowances;
@@ -115,7 +115,7 @@ contract Music is Context, MinterRole{
      * @param rawAmount The number of tokens to transfer
      * @return Whether or not the transfer succeeded
      */
-    function transfer(address dst, uint rawAmount) external payable returns (bool) {
+    function transfer(address dst, uint rawAmount) external returns (bool) {
         uint96 amount = safe96(rawAmount, "Music::transfer: amount exceeds 96 bits");
         _transferTokens(msg.sender, dst, amount);
         return true;
@@ -128,7 +128,7 @@ contract Music is Context, MinterRole{
      * @param rawAmount The number of tokens to transfer
      * @return Whether or not the transfer succeeded
      */
-    function transferFrom(address src, address dst, uint rawAmount) external payable returns (bool) {
+    function transferFrom(address src, address dst, uint rawAmount) external returns (bool) {
         address spender = msg.sender;
         uint96 spenderAllowance = allowances[src][spender];
         uint96 amount = safe96(rawAmount, "Music::approve: amount exceeds 96 bits");
