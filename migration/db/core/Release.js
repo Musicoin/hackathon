@@ -10,6 +10,8 @@ export default  mongoose.Schema({
     default: 'pending',
     index: true
   },
+  resourceUrl : String,
+  contentType : String,
   artist: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
