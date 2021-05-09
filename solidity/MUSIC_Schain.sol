@@ -15,7 +15,7 @@ contract Music is Context, MinterRole{
     uint8 public constant decimals = 18;
 
     /// @notice Total number of tokens in circulation
-    uint public totalSupply = 10000000 * 1000000000000000000; // 0 MUSIC
+    uint public totalSupply = 0; // 0 MUSIC
 
     // @notice Allowance amounts on behalf of others
     mapping (address => mapping (address => uint96)) internal allowances;
