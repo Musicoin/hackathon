@@ -23,12 +23,11 @@ let getAccount = async () => {
 async function Migrate() {
   const User = connection.model('User', UserSchema);
 
-  const artists = await User.find({ profileAddress: { $exists: true, $ne: null } })
-    .where({ mostRecentReleaseDate: { $exists: true, $ne: null }, migrated: { $exists: false } }).limit(10).exec();
+ 
 
   account = await getAccount();
 
-  let artistContract = new web3.eth.Contract(Artistabi),
+  var artistContract = new web3.eth.Contract(Artistabi),
     releaseContract = new web3.eth.Contract(PPPabi),
     artistContractsOptions = { data: Artistbytcode },
     PPPContractOptions = {data: PPPbytecode},
@@ -38,18 +37,18 @@ async function Migrate() {
       gasPrice: web3.utils.toHex(web3.utils.toWei('30', 'gwei'))
     };
 
-  let artistPromises = [];
+  var artistPromises = [];
   const Release = connection.model('Release', ReleaseSchema);
 
   let deployReleases = async (artistAddress) => {
       let releases = await Release.find({ artistAddress: artistAddress, migrated : {  $exists : false } }).limit(10).exec();
 
       //true if all the releases from a artist have been deployed
-      if(releases.length == 0) return true;
+      if( !releases || releases.length == 0) return true;
 
-    releases.forEach(ele => {
+  for ( let ele of releases) {
       
-      artistContractsOptions.arguments = [
+      PPPContractOptions.arguments = [
         account,
         ele.title,
         ele.artistName,
@@ -63,7 +62,7 @@ async function Migrate() {
       ];
 
         
-      let deploy_contrt = await artistContract.deploy(artistContractsOptions).send(parameter).on("confirmation", () => { });
+      let deploy_contrt = await releaseContract.deploy(PPPContractOptions).send(parameter).on("confirmation", () => { });
       
       if(deploy_contrt)
          await Release.updateOne({ artistAddress: artistAddress }, {
@@ -72,25 +71,30 @@ async function Migrate() {
         });
 
 
-    })
+    }
 
     deployReleases(artistAddress);
     
   }
 
-
+ const artists = await User.find({ profileAddress: { $exists: true, $ne: null } })
+    .where({ mostRecentReleaseDate: { $exists: true, $ne: null }, migrated: { $exists: false } }).limit(10).exec();
   //ToDo: Deploy Artist contract for each artist and update it to the db
-  artists.forEach(ele => {
-    artistContractsOptions.arguments = [ele.profileAddress,
+  
+    if(artists)
+    for(let ele of artists) 
+    {
+    artistContractsOptions.arguments = [
+    ele.profileAddress,
     ele.draftProfile.artistName,
     ele.draftProfile.ipfsImageUrl,
     ele.twitter.url,
-    ele.facebook.url];
-    artistPromises.push(artistContract.deploy(artistContractsOptions).send(parameter).on("confirmation", () => { }));
+    ele.facebook.url ];
 
+    artistPromises.push(artistContract.deploy(artistContractsOptions).send(parameter, ()=> {} ).on("confirmation", () => { }));
     //get All release and push it in array for deployment
     deployReleases(ele.profileAddress);
-  });
+  }
 
   //ToDo: update contract address in the database & set migrated to true for the artist,
   Promise.allSettled(artistPromises).then((aContracts) => {

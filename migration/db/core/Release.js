@@ -1,5 +1,3 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 import mongoose from "mongoose";
 // create the model for users and expose it to our app
 export default  mongoose.Schema({
