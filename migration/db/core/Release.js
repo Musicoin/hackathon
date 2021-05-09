@@ -1,5 +1,3 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 import mongoose from "mongoose";
 // create the model for users and expose it to our app
 export default  mongoose.Schema({
@@ -10,6 +8,8 @@ export default  mongoose.Schema({
     default: 'pending',
     index: true
   },
+  resourceUrl : String,
+  contentType : String,
   artist: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

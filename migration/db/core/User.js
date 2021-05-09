@@ -8,6 +8,10 @@ let emailSchema = {
 // define the schema for our user model
 const userSchema = mongoose.Schema({
   profileAddress: String,
+  //for migrated contracts
+  migrated : Boolean,
+  contractAddress: String,
+  
   updatePending: {
     type: Boolean,
     index: true,
