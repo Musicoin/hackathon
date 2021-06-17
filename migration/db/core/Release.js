@@ -1,6 +1,6 @@
-import mongoose from "mongoose";
+const mongoose = require('mongoose');
 // create the model for users and expose it to our app
-export default  mongoose.Schema({
+module.exports = mongoose.Schema({
   tx: String,
   state: {
     type: String,
@@ -36,6 +36,8 @@ export default  mongoose.Schema({
   errorMessage: String,
   markedAsAbuse: Boolean,
   pendingUpdateTxs: Object,
-  votes: Object
+  votes: Object,
+  //for migration
+  migrated : Boolean
 });
 //# sourceMappingURL=release.js.map

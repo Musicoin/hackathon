@@ -1,7 +1,7 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const connection = mongoose.createConnection(
-    process.env.MONGO_URL + "/musicoin-org",
+    process.env.MONGO_URL,
     {
       useNewUrlParser: true,
       bufferMaxEntries: 0,
@@ -9,4 +9,4 @@ const connection = mongoose.createConnection(
     },
 );
 
-export default connection;
+module.exports = connection;
