@@ -4,16 +4,9 @@ import "./MUSIC_Schain.sol";
 import "./MUSICWrapper.sol";
 
 contract PayPerPlay is MUSICWrapper {
-    string public constant contractVersion = "v0.7"; //rw what version does this now need to be?
+    string public constant contractVersion = "v0.7"; 
 
     Music private musicToken;
-
-    //rw set all gas costs to zero for Skale.  I am assuming this is ok
-    uint constant gasRequiredForFallback = 0; // 41000;
-    uint constant gasRequiredForLogging = 0; // 2000;
-    uint constant gasRequiredForSend = 0; // 3000;
-    uint constant gasPerRecipient = gasRequiredForFallback + gasRequiredForSend + gasRequiredForLogging;
-    uint constant distributeOverhead = 0; //100000;
 
     address public owner;
     address public createdBy;
@@ -66,14 +59,14 @@ contract PayPerPlay is MUSICWrapper {
             address _artistProfileAddress,
             uint _musicPerPlay,
             string memory _resourceUrl,
-            //bytes32 _contentType, 
+            bytes32 _contentType, 
             string memory _imageUrl,
             string memory _metadataUrl,
             address[] memory _contributors,
             uint[] memory _contributorShares) {
         title = _title;
         artistName = _artistName;
- //       contentType = _contentType;
+        contentType = _contentType;
         artistProfileAddress = _artistProfileAddress;
 
         createdBy = msg.sender;
@@ -97,7 +90,7 @@ contract PayPerPlay is MUSICWrapper {
     }
 
     function tip(uint _tipAmount) public payable {
-        //rw This will now be $MUSIC in _tipAmount not msg.value
+        //2021-05 This will now be $MUSIC in _tipAmount not msg.value
         distributePayment(_tipAmount);
 
         tipCount++;
@@ -110,18 +103,18 @@ contract PayPerPlay is MUSICWrapper {
     }
     
     function play(uint _pppAmount) public payable {
-        //rw This will now be $MUSIC in _pppAmount not msg.value.  
-        //rw This function could work without any variables passed as it was previously designed but then the end user has no control/protection from being overcharged by a high ppp fee.  
+        //2021-05 This will now be $MUSIC in _pppAmount not msg.value.  
+        //2021-05 This function could work without any variables passed as it was previously designed to work with ETH but then the end user has no control/protection from being overcharged by a high ppp fee.  
         require(_pppAmount >= musicPerPlay, "Insufficient funds sent for playing");
         play();
     }
     
     function play() public payable {
-        //rw This will now be $MUSIC not ETH  
-        //rw requiring _pppAmount changes the function signature and potentially breaks any connecting apps so this one is retained but unsafe for users playing malicious tracks as they have no control over how much $MUSIC they are sending now
+        //2021-05 This will now be $MUSIC not ETH  
+        //2021-05 requiring _pppAmount changes the function signature and potentially breaks any connecting apps so this one is retained but unsafe for users playing malicious tracks as they have no control over how much $MUSIC they are sending now (depending on who controls setting the PPP amounts)
         require(musicToken.balanceOf(msg.sender) >= musicPerPlay, "Insufficient funds in account");
 
-        //rw only use the required musicPerPlay amount and not what was sent in _pppAmount in case it was more than musicPerPlay
+        //2021-05 only use the required musicPerPlay amount and not what was sent in _pppAmount in case it was more than musicPerPlay
         distributePayment(musicPerPlay);
 
         totalEarned += musicPerPlay;
@@ -177,6 +170,7 @@ contract PayPerPlay is MUSICWrapper {
 
     /*
      * Updates share allocations.  All old allocations are over written
+     * 2021-05 This allows the owner/admin to change the PPP rate in _musicPerPlay.  If the owner is not Musicoin or PPP is not a lookup for an Oracle then the artist can set their own rates.
      */
     function updateLicense(uint _musicPerPlay,
         address[] memory _contributors, uint[] memory _contributorShares) public adminOnly {
@@ -196,13 +190,12 @@ contract PayPerPlay is MUSICWrapper {
         // watch out for division by 0 if totalShares == 0
         require(!(totalShares == 0 && contributors.length > 0), "Total shares must be more than 0");
 
-        distributionGasEstimate = estimateGasRequired(contributors.length);
         licenseVersion++;
         emit licenseUpdateEvent(licenseVersion);
     }
 
     function distributeBalance() public adminOnly {
-        distributePayment(musicToken.balanceOf(owner)); //rw updated to use $MUSIC instead of ETH address(this).balance
+        distributePayment(musicToken.balanceOf(address(this))); //rw updated to use $MUSIC balance of this contract address instead of ETH address(this).balance
     }
 
     function kill(bool _distributeBalanceFirst) public adminOnly {
@@ -221,10 +214,6 @@ contract PayPerPlay is MUSICWrapper {
         distributionReentryLock = false;
     }
 
-    function estimateGasRequired(uint _recipients) internal pure returns(uint) {
-        return distributeOverhead + _recipients*gasPerRecipient;
-    }
-
     function distributePayment(uint _total) withDistributionLock internal {
         for (uint c=0; c < contributors.length; c++) {
             distributePaymentTo(_total, c);
@@ -239,4 +228,3 @@ contract PayPerPlay is MUSICWrapper {
         }
     }
 }
-
