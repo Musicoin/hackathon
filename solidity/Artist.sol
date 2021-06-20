@@ -10,7 +10,7 @@ contract Artist is MUSICWrapper {
     string public contractVersion = "v0.3"; //rw what version does this now need to be?
     address public owner;
     address public createdBy;
-    address payable public forwardingAddress;  //rw is this only for sending coin to an address when the. receive function is used?
+    address payable public forwardingAddress;  //rw is this only for sending coin to an address when the receive function is used?
     string public artistName;
     string public imageUrl;
     string public descriptionUrl;
@@ -100,7 +100,7 @@ contract Artist is MUSICWrapper {
         //rw Although should only be using $MUSIC, the fallback receive function accepts ETH, so this pay out function will return the total balance of both ETH and $MUSIC
         require (recipient.send(address(this).balance), "payout balance failed");
         //rw updated to send the $MUSIC balance to the recipient from this contract (owner) as well
-        require(musicToken.transfer(recipient, musicToken.balanceOf(owner)), "payout failed"); //rw why is this sent to the recipient and not the forwardingAddress?
+        require(musicToken.transfer(recipient, musicToken.balanceOf(address(this))), "payout failed"); //rw why is this sent to the recipient and not the forwardingAddress?
     }
 
     function updateDetails (
