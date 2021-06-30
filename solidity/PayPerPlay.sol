@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 import "./MUSIC_Schain.sol";
 import "./MUSICWrapper.sol";
-import "./Utils/SafeMath.sol";
+import "./utils/SafeMath.sol";
 
 contract PayPerPlay is MUSICWrapper {
     string public constant contractVersion = "v0.7"; 
