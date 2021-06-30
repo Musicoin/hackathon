@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 import "./MUSIC_Schain.sol";
 import "./MUSICWrapper.sol";
+import "./Utils/SafeMath.sol";
 
 contract PayPerPlay is MUSICWrapper {
     string public constant contractVersion = "v0.7"; 
@@ -221,7 +222,7 @@ contract PayPerPlay is MUSICWrapper {
     }
 
     function distributePaymentTo(uint _total, uint cIdx) internal {
-        uint amount = uint((contributorShares[cIdx] * _total) / totalShares);
+        uint amount = div(contributorShares[cIdx] * _total, totalShares);
 
         if (amount > 0) {
             require(musicToken.transferFrom(msg.sender, contributors[cIdx], amount));
