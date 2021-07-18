@@ -26,7 +26,7 @@ module.exports = {
     //   }
     // }
     skale: {
-      url: "https://dappnet-node0.skalenodes.com:10008",
+      url: "https://dappnet-api.skalenodes.com/v1/elegant-ancha",
       accounts: ["0x4030a6fdc8e57b944eed1f4c3c99897c13948d0fd63a3324ed09bfe19c2d28c2"],
       gasPrice: 0,
     }
