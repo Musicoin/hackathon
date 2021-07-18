@@ -28,7 +28,7 @@ describe("MUSIC_Schain.sol", function () {
         });
 
         it("should show that the Initial totalSupply of Tokens is 0 on deployment", async function () {
-            const x = 10000000
+            const x = 10000000;
             expect(await MusicoinToken.totalSupply()).to.equal(x);
         });
 
@@ -81,12 +81,9 @@ describe("Artist.sol", function () {
 
         MusicoinToken = await MusicoinContract.deploy(_owner.address);
         Artist = await ArtistContract.deploy(addr1.address, "Artist", "IMG", "DESC", "Social"); //Create Artist contract instances
+        await Artist.connect(addr1).setMusicToken(MusicoinToken.address);
         await MusicoinToken.transfer(addr1.address, 100);
         await MusicoinToken.transfer(addr2.address, 100);
-
-        // await MusicoinToken.connect(addr1).approve(Artist.address, 100);
-        await MusicoinToken.connect(addr2).approve(Artist.address, 100);
-        // await MusicoinToken.connect(_owner).approve(Artist.address, 100);
     });
 
     describe("Deployment",async function () {
@@ -98,10 +95,10 @@ describe("Artist.sol", function () {
             expect(await MusicoinToken.balanceOf(addr1.address), 20)
         });
 
-        it("should give artist contract 100 spending allowance", async function () {
-            const allowance = await MusicoinToken.allowance(addr1.address, Artist.address);
-            assert.equal(allowance, 100);
-        });
+//        it("should give artist contract 100 spending allowance", async function () {
+//            const allowance = await MusicoinToken.allowance(addr1.address, Artist.address);
+//            assert.equal(allowance, 100);
+//        });
 
         it("transfer test", async function () {
             const total = await MusicoinToken.balanceOf(addr1.address);
@@ -193,7 +190,8 @@ describe("Artist.sol", function () {
             // Use an account that is NOT the owner
             //      - Sender's $MUSIC balance should be reduced by $MUSIC requested to send
             it("should tip the artist 2 Musicoin", async function () {
-                console.log('approvedd');
+                console.log('approved');
+		        await MusicoinToken.connect(addr2).approve(Artist.address, 100);
                 await Artist.connect(addr2).tip(2);
                 expect(await Artist.tipTotal()).to.equal(2);
             })
