@@ -2,7 +2,7 @@ const { expect, assert } = require('chai');
 const { ethers } = require("hardhat");
 
 
-// +- On Terminal run 'npx hardat test'
+
 
 //                    //
 //  MUSIC_Schain.sol  //
@@ -27,19 +27,20 @@ describe("MUSIC_Schain.sol", function () {
             expect(await MusicoinToken.symbol()).to.equal("MUSIC");
         });
 
-        it("should show that the Initial totalSupply of Tokens is 500000 on deployment", async function () {
-            expect(await MusicoinToken.totalSupply()).to.equal(500000);
+        it("should show that the Initial totalSupply of Tokens is 0 on deployment", async function () {
+            const x = 10000000
+            expect(await MusicoinToken.totalSupply()).to.equal(x);
         });
 
         // there should be a better way of checking the owner of Musicoin besides token balance
         it("should show the owner/deployer? of the token", async function () {
             const balance = await MusicoinToken.balanceOf(_owner.address);
-            assert.equal(balance, 500000);
+            assert.equal(balance, 10000000);
         });
 
     });
 
-    describe("MUSIC_Schainn basic functions", function () {
+    describe("MUSIC_Schain basic functions", function () {
 
         it("should transfer 20 tokens to addr1", async function () {
             MusicoinToken.transfer(addr1.address, 20);
@@ -80,6 +81,12 @@ describe("Artist.sol", function () {
 
         MusicoinToken = await MusicoinContract.deploy(_owner.address);
         Artist = await ArtistContract.deploy(addr1.address, "Artist", "IMG", "DESC", "Social"); //Create Artist contract instances
+        await MusicoinToken.transfer(addr1.address, 100);
+        await MusicoinToken.transfer(addr2.address, 100);
+
+        // await MusicoinToken.connect(addr1).approve(Artist.address, 100);
+        await MusicoinToken.connect(addr2).approve(Artist.address, 100);
+        // await MusicoinToken.connect(_owner).approve(Artist.address, 100);
     });
 
     describe("Deployment",async function () {
@@ -87,7 +94,19 @@ describe("Artist.sol", function () {
         // Create with the owner the same account as the msg sender (A)
         it("should deploy artist to the correct owner", async function () {
             expect(await Artist.owner()).to.equal(addr1.address);
+            // console.log(MusicoinToken.address);
+            expect(await MusicoinToken.balanceOf(addr1.address), 20)
         });
+
+        it("should give artist contract 100 spending allowance", async function () {
+            const allowance = await MusicoinToken.allowance(addr1.address, Artist.address);
+            assert.equal(allowance, 100);
+        });
+
+        it("transfer test", async function () {
+            const total = await MusicoinToken.balanceOf(addr1.address);
+            assert.equal(total, 100);
+        })
 
         // Check the values in each field to be the same as you set using the get functions. Also,
         //      createdBy should be the msg.sender;
@@ -100,14 +119,9 @@ describe("Artist.sol", function () {
         //      createdBy should be the msg.sender but owner is what you sent;
 
     });
+    
 
     describe("Artist.sol Basic Tests", async function () {
-
-        it("should tip the artist 2 Musicoin", async function () {
-            Artist.connect(_owner).tip(2);
-            expect(await Artist.tipTotal()).to.equal(2);
-        })
-
 
         // Using (A) and sending requests from the contract owner account, 
         // update the variables using the set functions and check their values 
@@ -140,6 +154,13 @@ describe("Artist.sol", function () {
         describe("Testing FOLLOWING functions", async function () {
 
             // FOLLOWING using contract (A):
+            // await Artist.follow();
+            it("should follow", async function () {
+                await Artist.connect(_owner).follow()
+                const follower = await Artist.followers();
+                assert.equal(follower, 1);
+            });
+            
 
             // Inspect "following".  It should be empty (can this be checked without hash indexes?)
 
@@ -171,6 +192,11 @@ describe("Artist.sol", function () {
         describe("Testing TIPPING function", async function () {
             // Use an account that is NOT the owner
             //      - Sender's $MUSIC balance should be reduced by $MUSIC requested to send
+            it("should tip the artist 2 Musicoin", async function () {
+                console.log('approvedd');
+                await Artist.connect(addr2).tip(2);
+                expect(await Artist.tipTotal()).to.equal(2);
+            })
             //      - Owner's $MUSIC balance should be increased by $MUSIC requested to send
             //      - TipTotal and TipCount should be incremented accordingly
             //      - Event should be emitted with the correct information
@@ -204,36 +230,36 @@ describe("PayPerPlay.sol", function () {
     let addr1;
     let addr2;
   
-    beforeEach(async function () {
-      //+-Get the ContractFactory and Signers here:_
-      ArtistContract = await ethers.getContractFactory("Artist");
-      PayPerPlayContract = await ethers.getContractFactory("PayPerPlay");
-      MusicoinContract = await ethers.getContractFactory("Music");
-      [_owner, addr1, addr2] = await ethers.getSigners();
+    // beforeEach(async function () {
+    //   //+-Get the ContractFactory and Signers here:_
+    //   ArtistContract = await ethers.getContractFactory("Artist");
+    //   PayPerPlayContract = await ethers.getContractFactory("PayPerPlay");
+    //   MusicoinContract = await ethers.getContractFactory("Music");
+    //   [_owner, addr1, addr2] = await ethers.getSigners();
 
-      MusicoinToken = await MusicoinContract.deploy(_owner.address);
-      Artist = await ArtistContract.deploy(_owner.address, "Artist", "IMG", "DESC", "SOCIAL");
-      PayPerPlay = await PayPerPlayContract.deploy(
-          _owner.address,
-          "PPP Contract",
-          "Artist",
-          addr1.address,
-          1,
-          "URL",
-          ethers.utils.formatBytes32String("Content"),
-          "IMG",
-          "metadata",
-          [addr1.address], // asks for array, then displays : Error: invalid arrayify value
-          [1] // out of 100 or 1?
-          );
-    });
-    describe("Deployment", function () {
+    //   MusicoinToken = await MusicoinContract.deploy(_owner.address);
+    //   Artist = await ArtistContract.deploy(_owner.address, "Artist", "IMG", "DESC", "SOCIAL");
+    //   PayPerPlay = await PayPerPlayContract.deploy(
+    //       _owner.address,
+    //       "PPP Contract",
+    //       "Artist",
+    //       addr1.address,
+    //       1,
+    //       "URL",
+    //       ethers.utils.formatBytes32String("Content"),
+    //       "IMG",
+    //       "metadata",
+    //       [addr1.address], // asks for array, then displays : Error: invalid arrayify value
+    //       [1] // out of 100 or 1?
+    //       );
+    // });
+    // describe("Deployment", function () {
 
-        it("should deploy PPP Contract to the right owner", async function () {
-            const curOwner = await PayPerPlay.owner()
-            expect(curOwner).to.equal(_owner.address)
-        });
-    });
+    //     it("should deploy PPP Contract to the right owner", async function () {
+    //         const curOwner = await PayPerPlay.owner()
+    //         expect(curOwner).to.equal(_owner.address)
+    //     });
+    // });
     
     describe("PayPerPlay.sol Basic Tests", async function () {
         // Create PPP contract instances
@@ -316,5 +342,4 @@ describe("PayPerPlay.sol", function () {
         
         // DISTRIBUTE BALANCE (TBD. Currently there are no funds collected for payout using this contract)
     });
-    
 });
