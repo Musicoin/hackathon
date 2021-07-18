@@ -128,6 +128,11 @@ contract PayPerPlay is MUSICWrapper {
 
     /*** Admin functions ***/
 
+    //**rw Added for testing
+    function setMusicToken(address newMusicToken) public adminOnly {
+        musicToken = Music(address(newMusicToken));
+    }
+    
     function transferOwnership(address newOwner) public adminOnly {
         address oldOwner = owner;
         owner = newOwner;
