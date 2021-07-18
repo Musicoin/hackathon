@@ -141,4 +141,9 @@ contract Artist is MUSICWrapper {
     function setSocialUrl(string memory _socialUrl) public onlyOwner {
         socialUrl = _socialUrl;
     }
+    
+    //**rw Added for testing
+    function setMusicToken(address newMusicToken) public onlyOwner {
+        musicToken = Music(address(newMusicToken));
+    }
 }
