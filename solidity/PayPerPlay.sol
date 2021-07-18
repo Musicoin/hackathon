@@ -5,6 +5,8 @@ import "./MUSICWrapper.sol";
 import "./utils/SafeMath.sol";
 
 contract PayPerPlay is MUSICWrapper {
+    using SafeMath for uint256;
+    
     string public constant contractVersion = "v0.7"; 
 
     Music private musicToken;
@@ -222,7 +224,8 @@ contract PayPerPlay is MUSICWrapper {
     }
 
     function distributePaymentTo(uint _total, uint cIdx) internal {
-        uint amount = div(contributorShares[cIdx] * _total, totalShares);
+        uint portion = contributorShares[cIdx] * _total;
+        uint amount = portion.div(totalShares);
 
         if (amount > 0) {
             require(musicToken.transferFrom(msg.sender, contributors[cIdx], amount));
