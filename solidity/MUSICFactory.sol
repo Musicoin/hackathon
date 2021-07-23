@@ -15,7 +15,7 @@ contract MusicFactory {
 	address public musicTokenAddress;
 	
 	address[] public artistList; 
-	PayPerPlay[] public payPerPlayList; // All PPP contracts
+	address[] public payPerPlayList; // All PPP contracts
 	mapping(address => Artist) public artistMap; // All contracts for a given Artist
 	mapping(address => PayPerPlay) public payPerPlayMap; // All contracts for a given PPP
 	mapping(address => PayPerPlay[]) public artistPayPerPlayMap; // All PPP contracts for a given Artist
@@ -71,11 +71,14 @@ contract MusicFactory {
         return artistList;
     }
     
+    function getPayPerPlayList() public view returns (address[] memory) {
+        return payPerPlayList;
+    }
+    
 	// Does this need to be onlyOwner?
     function createPayPerPlay(address _owner, string memory _title, string memory _artistName, address _artistProfileAddress, uint _musicPerPlay, string memory _resourceUrl, bytes32 _contentType, string memory _imageUrl, string memory _metadataUrl, address[] memory _contributors, uint[] memory _contributorShares) public {
-    	PayPerPlay newPPP = new PayPerPlay(_title, _artistName, _artistProfileAddress, _musicPerPlay, _resourceUrl, _contentType, _imageUrl, _metadataUrl, _contributors, _contributorShares, msg.sender);
-    	newPPP.transferOwnership(_owner);
-    	payPerPlayList.push(newPPP); 	 
+    	PayPerPlay newPPP = new PayPerPlay(_owner, _title, _artistName, _artistProfileAddress, _musicPerPlay, _resourceUrl, _contentType, _imageUrl, _metadataUrl, _contributors, _contributorShares);
+    	payPerPlayList.push(address(newPPP)); 	 
 		payPerPlayMap[address(newPPP)] = newPPP;
 		artistPayPerPlayMap[_artistProfileAddress].push(newPPP);
 		emit newPayPerPlayCreated('A new PayPerPlay contract has been added', address(newPPP), msg.sender);
