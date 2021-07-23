@@ -13,14 +13,12 @@ contract Artist {
    	address public createdBy;
     address payable public forwardingAddress;  //rw is this only for sending coin to an address when the receive function is used?
 
-    struct ArtistInfo {
-    	string artistName;
-    	string imageUrl;
-    	string descriptionUrl;
-    	string socialUrl;
-	}
-	ArtistInfo public artistInfo;
-	
+   	string public artistName;
+
+  	string public imageUrl;
+   	string public descriptionUrl;
+   	string public socialUrl;
+
     uint public tipCount = 0;
     uint public tipTotal = 0;
     mapping(address => bool) public following;
@@ -35,9 +33,13 @@ contract Artist {
      * Constructor for the Artist contract.
      * Assumes validation logic for artist details is managed by the Music player application.
      * Address objects will fail by the EVM if not valid.
+     * Assumes / requires that this is created using the MusicoinFactory only
      */
     constructor (address _owner, string memory _artistName, string memory _imageUrl, string memory _descriptionUrl, string memory _socialUrl, address _createdBy) {
-		artistInfo = ArtistInfo(_artistName, _imageUrl, _descriptionUrl, _socialUrl);
+		artistName = _artistName;
+		imageUrl = _imageUrl;
+		descriptionUrl = _descriptionUrl;
+		socialUrl = _socialUrl;
         owner = _owner;
         createdBy = _createdBy;
         forwardingAddress = payable(address(0));
@@ -85,10 +87,10 @@ contract Artist {
     }
 
     function updateDetails (string memory _artistName, string memory _imageUrl, string memory _descriptionUrl, string memory _socialUrl) public onlyOwner {
-        artistInfo.artistName = _artistName;
-        artistInfo.imageUrl = _imageUrl;
-        artistInfo.descriptionUrl = _descriptionUrl;
-        artistInfo.socialUrl = _socialUrl;
+        artistName = _artistName;
+        imageUrl = _imageUrl;
+        descriptionUrl = _descriptionUrl;
+        socialUrl = _socialUrl;
     }
 
     function removeForwardingAddress() public onlyOwner {
@@ -104,18 +106,18 @@ contract Artist {
     }
 
     function setArtistName(string memory _artistName) public onlyOwner {
-        artistInfo.artistName = _artistName;
+        artistName = _artistName;
     }
 
     function setImageUrl(string memory _imageUrl) public onlyOwner {
-        artistInfo.imageUrl = _imageUrl;
+        imageUrl = _imageUrl;
     }
 
     function setDescriptionUrl(string memory _descriptionUrl) public onlyOwner {
-        artistInfo.descriptionUrl = _descriptionUrl;
+        descriptionUrl = _descriptionUrl;
     }
 
     function setSocialUrl(string memory _socialUrl) public onlyOwner {
-        artistInfo.socialUrl = _socialUrl;
+        socialUrl = _socialUrl;
     }
 }
