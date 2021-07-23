@@ -8,8 +8,8 @@ export function exit() {
   let schainERC20ABI = require("./contracts/schain_ERC20_ABI.json");
 
   let privateKey = new Buffer(
-    process.env.REACT_APP_INSECURE_PRIVATE_KEY,
-    "hex"
+      process.env.REACT_APP_INSECURE_PRIVATE_KEY,
+      "hex"
   );
   let accountForMainnet = process.env.REACT_APP_INSECURE_ACCOUNT;
   let accountForSchain = process.env.REACT_APP_INSECURE_ACCOUNT;
@@ -17,15 +17,15 @@ export function exit() {
   let chainId = process.env.REACT_APP_INSECURE_CHAIN_ID;
 
   const customCommon = Common.forCustomChain(
-    "mainnet",
-    {
-      name: "skale-network",
-      chainId: chainId
-    },
-    "istanbul"
+      "mainnet",
+      {
+        name: "skale-network",
+        chainId: chainId
+      },
+      "istanbul"
   );
-  const tokenManagerAddress = schainABIs.token_manager_address;
-  const tokenManagerABI = schainABIs.token_manager_abi;
+  const tokenManagerAddress = schainABIs.token_manager_erc20_address;
+  const tokenManagerABI = schainABIs.token_manager_erc20_abi;
 
   const erc20ABI = schainERC20ABI.erc20_abi;
   const erc20Address = schainERC20ABI.erc20_address;
@@ -35,8 +35,8 @@ export function exit() {
   const web3ForSchain = new Web3(schainEndpoint);
 
   let tokenManager = new web3ForSchain.eth.Contract(
-    tokenManagerABI,
-    tokenManagerAddress
+      tokenManagerABI,
+      tokenManagerAddress
   );
 
   let contractERC20 = new web3ForSchain.eth.Contract(erc20ABI, erc20Address);
@@ -47,24 +47,23 @@ export function exit() {
    * https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/contracts/token/ERC20
    */
   let approve = contractERC20.methods
-    .approve(
-      tokenManagerAddress,
-      web3ForSchain.utils.toHex(web3ForSchain.utils.toWei("1", "ether"))
-    )
-    .encodeABI();
+      .approve(
+          tokenManagerAddress,
+          web3ForSchain.utils.toHex(web3ForSchain.utils.toWei("1", "ether"))
+      )
+      .encodeABI();
 
   /**
    * Uses the SKALE TokenManager
    * contract function exitToMainERC20
    */
   let exit = tokenManager.methods
-    .exitToMainERC20(
-      erc20AddressOnMainnet,
-      accountForMainnet,
-      web3ForSchain.utils.toHex(web3ForSchain.utils.toWei("1", "ether")),
-      web3ForSchain.utils.toHex(web3ForSchain.utils.toWei("0.5", "ether"))
-    )
-    .encodeABI();
+      .exitToMainERC20(
+          erc20AddressOnMainnet,
+          accountForMainnet,
+          web3ForSchain.utils.toHex(web3ForSchain.utils.toWei("1", "ether"))
+      )
+      .encodeABI();
 
   web3ForSchain.eth.getTransactionCount(accountForSchain).then((nonce) => {
     //create raw transaction
@@ -86,39 +85,38 @@ export function exit() {
 
     //send signed transaction (approval)
     web3ForSchain.eth
-      .sendSignedTransaction("0x" + serializedTxApprove.toString("hex"))
-      .on("receipt", (receipt) => {
-        console.log(receipt);
-        web3ForSchain.eth
-          .getTransactionCount(accountForSchain)
-          .then((nonce) => {
-            //create raw transaction
-            const rawTxExit = {
-              chainId: chainId,
-              from: accountForSchain,
-              nonce: "0x" + nonce.toString(16),
-              data: exit,
-              to: tokenManagerAddress,
-              gasPrice: 100000000000,
-              gas: 8000000,
-              value: 0
-            };
+        .sendSignedTransaction("0x" + serializedTxApprove.toString("hex"))
+        .on("receipt", (receipt) => {
+          console.log(receipt);
+          web3ForSchain.eth
+              .getTransactionCount(accountForSchain)
+              .then((nonce) => {
+                //create raw transaction
+                const rawTxExit = {
+                  chainId: chainId,
+                  from: accountForSchain,
+                  nonce: "0x" + nonce.toString(16),
+                  data: exit,
+                  to: tokenManagerAddress,
+                  gasPrice: 100000000000,
+                  gas: 8000000
+                };
 
-            //sign transaction
-            const txExit = new Tx(rawTxExit, { common: customCommon });
-            txExit.sign(privateKey);
+                //sign transaction
+                const txExit = new Tx(rawTxExit, { common: customCommon });
+                txExit.sign(privateKey);
 
-            const serializedTxExit = txExit.serialize();
+                const serializedTxExit = txExit.serialize();
 
-            //send signed transaction (exit)
-            web3ForSchain.eth
-              .sendSignedTransaction("0x" + serializedTxExit.toString("hex"))
-              .on("receipt", (receipt) => {
-                console.log(receipt);
-              })
-              .catch(console.error);
-          });
-      })
-      .catch(console.error);
+                //send signed transaction (exit)
+                web3ForSchain.eth
+                    .sendSignedTransaction("0x" + serializedTxExit.toString("hex"))
+                    .on("receipt", (receipt) => {
+                      console.log(receipt);
+                    })
+                    .catch(console.error);
+              });
+        })
+        .catch(console.error);
   });
 }

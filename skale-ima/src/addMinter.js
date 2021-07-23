@@ -7,35 +7,34 @@ export function addMinter() {
   let schainERC20ABI = require("./contracts/schain_ERC20_ABI.json");
 
   let contractOwnerPrivateKey = new Buffer(
-    process.env.REACT_APP_INSECURE_CONTRACT_OWNER_PRIVATE_KEY,
-    "hex"
+      process.env.REACT_APP_INSECURE_CONTRACT_OWNER_PRIVATE_KEY,
+      "hex"
   );
   let contractOwnerAccount =
-    process.env.REACT_APP_INSECURE_CONTRACT_OWNER_ACCOUNT;
+      process.env.REACT_APP_INSECURE_CONTRACT_OWNER_ACCOUNT;
 
   let schainEndpoint = process.env.REACT_APP_INSECURE_SKALE_CHAIN;
   let chainId = process.env.REACT_APP_INSECURE_CHAIN_ID;
 
   const customCommon = Common.forCustomChain(
-    "mainnet",
-    {
-      name: "skale-network",
-      chainId: chainId
-    },
-    "istanbul"
+      "mainnet",
+      {
+        name: "skale-network",
+        chainId: chainId
+      },
+      "istanbul"
   );
 
   const erc20ABI = schainERC20ABI.erc20_abi;
   const erc20Address = schainERC20ABI.erc20_address;
 
-  const lockAndDataForSchainERC20Address =
-    schainABIs.lock_and_data_for_schain_erc20_address;
+  const tokenManagerERC20Address = schainABIs.token_manager_erc20_address;
 
   const web3ForSchain = new Web3(schainEndpoint);
 
   let schainERC20Contract = new web3ForSchain.eth.Contract(
-    erc20ABI,
-    erc20Address
+      erc20ABI,
+      erc20Address
   );
 
   /**
@@ -44,8 +43,8 @@ export function addMinter() {
    * https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/contracts/token/ERC20
    */
   let addMinter = schainERC20Contract.methods
-    .addMinter(lockAndDataForSchainERC20Address)
-    .encodeABI();
+      .addMinter(tokenManagerERC20Address)
+      .encodeABI();
 
   web3ForSchain.eth.getTransactionCount(contractOwnerAccount).then((nonce) => {
     //create raw transaction
@@ -67,10 +66,10 @@ export function addMinter() {
 
     //send signed transaction (add minter)
     web3ForSchain.eth
-      .sendSignedTransaction("0x" + serializedTxtxAddMinter.toString("hex"))
-      .on("receipt", (receipt) => {
-        console.log(receipt);
-      })
-      .catch(console.error);
+        .sendSignedTransaction("0x" + serializedTxtxAddMinter.toString("hex"))
+        .on("receipt", (receipt) => {
+          console.log(receipt);
+        })
+        .catch(console.error);
   });
 }
