@@ -13,16 +13,13 @@ contract PayPerPlay {
     address public owner;
     address public createdBy;
     
-    struct PayPerPlayInfo {
-	    string title;
-	    string artistName;
-	    address artistProfileAddress;
-	    string resourceUrl; // e.g. ipfs://<hash>
-	    bytes32 contentType; 
-	    string metadataUrl;
-	    string imageUrl;
-	}
-	PayPerPlayInfo public payPerPlayInfo;
+    string public title;
+    string public artistName;
+    address public artistProfileAddress;
+    string public resourceUrl; // e.g. ipfs://<hash>
+    bytes32 public contentType; 
+    string public metadataUrl;
+    string public imageUrl;
 	
     // license information
     uint public musicPerPlay;
@@ -53,21 +50,28 @@ contract PayPerPlay {
     event artistProfileAddressUpdateEvent(address oldArtistAddress, address newArtistAddress);
 
     // "0xca35b7d915458ef540ade6068dfe2f44e8fa733c", "Title", "Arist", "0xca35b7d915458ef540ade6068dfe2f44e8fa733c", 1000000, "ipfs://resourceQcjacL3jCvY53MrU6hDBhyW4VjzQqSEoUcEPez", "audio/mp3", "ipfs://imagefbFQcjacL3jCvY53MrU6hDBhyW4VjzQqSEoUcEPez", "ipfs://metadataQcjacL3jCvY53MrU6hDBhyW4VjzQqSEoUcEPez", ["0xef55bfac4228981e850936aaf042951f7b146e41", "0x11111", "0x22222", "0x33333"], [1, 1, 1, 1]
-    constructor (string memory _title, string memory _artistName, address _artistProfileAddress
+    // Assumes / requires that this is created using the MusicoinFactory only
+    constructor (address _owner, string memory _title, string memory _artistName, address _artistProfileAddress
     	, uint _musicPerPlay, string memory _resourceUrl, bytes32 _contentType, string memory _imageUrl
-    	, string memory _metadataUrl, address[] memory _contributors, uint[] memory _contributorShares
-    	, address _createdBy
+    	, string memory _metadataUrl, address[] memory _contributors, uint[] memory _contributorShares 
     	) {
         
-        payPerPlayInfo = PayPerPlayInfo(_title, _artistName, _artistProfileAddress, _resourceUrl, _contentType, _metadataUrl, _imageUrl);
-        createdBy = _createdBy;
+        title = _title;
+        artistName = _artistName;
+        contentType = _contentType;
+        artistProfileAddress = _artistProfileAddress;
 
-        // allow creator to call this function once during initialization
-        owner = _createdBy;
+        createdBy = msg.sender;
+        resourceUrl = _resourceUrl;
+        metadataUrl = _metadataUrl;
+        imageUrl = _imageUrl;
+        
+        // allow to call this function once during initialization
+        owner = msg.sender;
         updateLicense(_musicPerPlay, _contributors, _contributorShares);
 
-        // setting the real owner needs to be called separately now. The constructor has too many parameters 
-        // owner = _owner;
+        // setting the real owner needs to be called separately now. The constructor has too many parameters.  Assuming it is the _createdBy address. 
+        owner = _owner;
         musicFactory = MusicFactory(msg.sender);
    }
 
@@ -78,35 +82,23 @@ contract PayPerPlay {
 
     function tip(uint _tipAmount) public payable {
         //2021-05 This will now be $MUSIC in _tipAmount not msg.value
-        distributePayment(_tipAmount);
+        distributePayment(_tipAmount, msg.sender);
 
         tipCount++;
         totalTipped += _tipAmount;
-        totalEarned += _tipAmount;
     }
 
     function getContributorsLength() public view returns(uint) {
         return contributors.length;
     }
-    
-    function play(uint _pppAmount) public payable {
-        //2021-05 This will now be $MUSIC in _pppAmount not msg.value.  
-        //2021-05 This function could work without any variables passed as it was previously designed to work with ETH but then the end user has no control/protection from being overcharged by a high ppp fee.  
-        require(_pppAmount >= musicPerPlay, "Insufficient funds");
-        play();
-    }
-    
+
     function play() public payable {
-        //2021-05 This will now be $MUSIC not ETH  
-        //2021-05 requiring _pppAmount changes the function signature and potentially breaks any connecting apps so this one is retained but unsafe for users playing malicious tracks as they have no control over how much $MUSIC they are sending now (depending on who controls setting the PPP amounts)
+        //2021-05 This will now be $MUSIC in _pppAmount not msg.value.  
         require(musicFactory.getMusicToken().balanceOf(msg.sender) >= musicPerPlay, "Insufficient funds");
 
         //2021-05 only use the required musicPerPlay amount and not what was sent in _pppAmount in case it was more than musicPerPlay
-        distributePayment(musicPerPlay);
-
-        totalEarned += musicPerPlay;
+        distributePayment(musicPerPlay, msg.sender);
         playCount++;
-
         emit playEvent(playCount);
     }
 
@@ -119,38 +111,38 @@ contract PayPerPlay {
     }
 
     function updateTitle(string memory newTitle) public adminOnly {
-        string memory oldTitle = payPerPlayInfo.title;
-        payPerPlayInfo.title = newTitle;
+        string memory oldTitle = title;
+        title = newTitle;
         emit titleUpdateEvent(oldTitle, newTitle);
     }
 
     function updateArtistName(string memory newArtistName) public adminOnly {
-        string memory oldArtistName = payPerPlayInfo.artistName;
-        payPerPlayInfo.artistName = newArtistName;
+        string memory oldArtistName = artistName;
+        artistName = newArtistName;
         emit artistNameUpdateEvent(oldArtistName, newArtistName);
     }
 
     function updateResourceUrl(string memory newResourceUrl) public adminOnly {
-        string memory oldResourceUrl = payPerPlayInfo.resourceUrl;
-        payPerPlayInfo.resourceUrl = newResourceUrl;
+        string memory oldResourceUrl = resourceUrl;
+        resourceUrl = newResourceUrl;
         emit resourceUpdateEvent(oldResourceUrl, newResourceUrl);
     }
 
     function updateImageUrl(string memory newImageUrl) public adminOnly {
-        string memory oldImageUrl = payPerPlayInfo.imageUrl;
-        payPerPlayInfo.imageUrl = newImageUrl;
+        string memory oldImageUrl = imageUrl;
+        imageUrl = newImageUrl;
         emit imageUpdateEvent(oldImageUrl, newImageUrl);
     }
 
     function updateArtistAddress(address newArtistAddress) public adminOnly {
-        address oldArtistAddress = payPerPlayInfo.artistProfileAddress;
-        payPerPlayInfo.artistProfileAddress = newArtistAddress;
+        address oldArtistAddress = artistProfileAddress;
+        artistProfileAddress = newArtistAddress;
         emit artistProfileAddressUpdateEvent(oldArtistAddress, newArtistAddress);
     }
 
     function updateMetadataUrl(string memory newMetadataUrl) public adminOnly {
-        string memory oldMetadataUrl = payPerPlayInfo.metadataUrl;
-        payPerPlayInfo.metadataUrl = newMetadataUrl;
+        string memory oldMetadataUrl = metadataUrl;
+        metadataUrl = newMetadataUrl;
         metadataVersion++;
         emit metadataUpdateEvent(oldMetadataUrl, newMetadataUrl);
     }
@@ -159,8 +151,7 @@ contract PayPerPlay {
      * Updates share allocations.  All old allocations are over written
      * 2021-05 This allows the owner/admin to change the PPP rate in _musicPerPlay.  If the owner is not Musicoin or PPP is not a lookup for an Oracle then the artist can set their own rates.
      */
-    function updateLicense(uint _musicPerPlay,
-        address[] memory _contributors, uint[] memory _contributorShares) public adminOnly {
+    function updateLicense(uint _musicPerPlay, address[] memory _contributors, uint[] memory _contributorShares) public adminOnly {
 
         require (_contributors.length == _contributorShares.length, '# of contributors doesnt match the # of shares');
         musicPerPlay = _musicPerPlay;
@@ -182,7 +173,7 @@ contract PayPerPlay {
     }
 
     function distributeBalance() public adminOnly {
-        distributePayment(musicFactory.getMusicToken().balanceOf(address(this))); //rw updated to use $MUSIC balance of this contract address instead of ETH address(this).balance
+        distributePayment(musicFactory.getMusicToken().balanceOf(address(this)), address(this)); //rw updated to use $MUSIC balance of this contract address instead of ETH address(this).balance
     }
 
     function kill(bool _distributeBalanceFirst) public adminOnly {
@@ -201,18 +192,25 @@ contract PayPerPlay {
         distributionReentryLock = false;
     }
 
-    function distributePayment(uint _total) withDistributionLock internal {
+    function distributePayment(uint _total, address fromAccount) withDistributionLock internal {
         for (uint c=0; c < contributors.length; c++) {
-            distributePaymentTo(_total, c);
+            distributePaymentTo(_total, c, fromAccount);
         }
     }
 
-    function distributePaymentTo(uint _total, uint cIdx) internal {
+    function distributePaymentTo(uint _total, uint cIdx, address fromAccount) internal {
         uint portion = contributorShares[cIdx] * _total;
         uint amount = portion.div(totalShares);
 
-        if (amount > 0) {
-            require(musicFactory.transferFrom(msg.sender, contributors[cIdx], amount));
+		// If this is a regular payment request then it must pay via the requester's funds using TransferFrom, otherwise it is being paid via this contract and uses Transfer only
+        if ((amount > 0) && (fromAccount != address(this))) {
+            require(musicFactory.transferFrom(fromAccount, contributors[cIdx], amount));
+        } else if ((amount > 0) && (fromAccount == address(this))) {
+            require(musicFactory.getMusicToken().transfer(contributors[cIdx], amount));
         }
+
+        totalEarned += amount; // Moved here for more accurate accounting in case there is coin lost due to contribution ratio rounding down of decimals
+        
+        
     }
 }
