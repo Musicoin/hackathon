@@ -6,36 +6,35 @@ export function registerOnMainnet() {
   let rinkebyERC20ABI = require("./contracts/rinkeby_ERC20_ABI.json");
 
   let privateKey = new Buffer(
-    process.env.REACT_APP_INSECURE_SCHAIN_OWNER_PRIVATE_KEY,
-    "hex"
+      process.env.REACT_APP_INSECURE_SCHAIN_OWNER_PRIVATE_KEY,
+      "hex"
   );
   let erc20OwnerForMainnet =
-    process.env.REACT_APP_INSECURE_SCHAIN_OWNER_ACCOUNT;
+      process.env.REACT_APP_INSECURE_SCHAIN_OWNER_ACCOUNT;
 
   let rinkeby = process.env.REACT_APP_INSECURE_RINKEBY;
   let schainName = process.env.REACT_APP_INSECURE_CHAIN_NAME;
   let chainId = process.env.REACT_APP_INSECURE_RINKEBY_CHAIN_ID;
 
-  const lockAndDataAddress =
-    rinkebyABIs.lock_and_data_for_mainnet_erc20_address;
-  const lockAndDataBoxABI = rinkebyABIs.lock_and_data_for_mainnet_erc20_abi;
+  const depositBoxAddress = rinkebyABIs.deposit_box_erc20_address;
+  const depositBoxABI = rinkebyABIs.deposit_box_erc20_abi;
 
   const erc20AddressOnMainnet = rinkebyERC20ABI.erc20_address;
 
   const web3ForMainnet = new Web3(rinkeby);
 
-  let LockAndDataForMainnet = new web3ForMainnet.eth.Contract(
-    lockAndDataBoxABI,
-    lockAndDataAddress
+  let DepositBox = new web3ForMainnet.eth.Contract(
+      depositBoxABI,
+      depositBoxAddress
   );
 
   /**
-   * Uses the SKALE LockAndDataForMainnetERC20
+   * Uses the SKALE DepositBoxERC20
    * contract function addERC20TokenByOwner
    */
-  let addERC20TokenByOwner = LockAndDataForMainnet.methods
-    .addERC20TokenByOwner(schainName, erc20AddressOnMainnet)
-    .encodeABI();
+  let addERC20TokenByOwner = DepositBox.methods
+      .addERC20TokenByOwner(schainName, erc20AddressOnMainnet)
+      .encodeABI();
 
   web3ForMainnet.eth.getTransactionCount(erc20OwnerForMainnet).then((nonce) => {
     const rawTxAddERC20TokenByOwner = {
@@ -43,11 +42,11 @@ export function registerOnMainnet() {
       from: erc20OwnerForMainnet,
       nonce: "0x" + nonce.toString(16),
       data: addERC20TokenByOwner,
-      to: lockAndDataAddress,
+      to: depositBoxAddress,
       gas: 6500000,
       gasPrice: 1000000000,
       value: web3ForMainnet.utils.toHex(
-        web3ForMainnet.utils.toWei("0", "ether")
+          web3ForMainnet.utils.toWei("0", "ether")
       )
     };
 
@@ -63,10 +62,10 @@ export function registerOnMainnet() {
 
     //send signed transaction (addERC20TokenByOwner)
     web3ForMainnet.eth
-      .sendSignedTransaction("0x" + serializedTxDeposit.toString("hex"))
-      .on("receipt", (receipt) => {
-        console.log(receipt);
-      })
-      .catch(console.error);
+        .sendSignedTransaction("0x" + serializedTxDeposit.toString("hex"))
+        .on("receipt", (receipt) => {
+          console.log(receipt);
+        })
+        .catch(console.error);
   });
 }
