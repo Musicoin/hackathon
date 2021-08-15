@@ -16,8 +16,10 @@ task("accounts", "Prints the list of accounts", async () => {
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
+
+
 module.exports = {
-  defaultNetwork: "skale", // "hardhat",
+  defaultNetwork: "skale",
   solidity: {
     version: "0.8.0",
     settings: {
@@ -29,15 +31,46 @@ module.exports = {
   },
 
   networks: {
-    // hardhat: {
-    //   forking: {
-    //     url: "https://dappnet-node0.skalenodes.com:10008"
-    //   }
-    // }
+    hardhat: {
+    },
     skale: {
-      url: "https://dappnet-node0.skalenodes.com:10008",
+      url: "https://dappnet-api.skalenodes.com/v1/elegant-ancha",
+      chainId: 2067916454627834,
       accounts: ["0x4030a6fdc8e57b944eed1f4c3c99897c13948d0fd63a3324ed09bfe19c2d28c2"],
-      gasPrice: 0,
     }
   }
 };
+
+
+
+/**
+
+SKALE TestNet
+S-Chain Name
+elegant-ancha
+
+Chain ID
+0x758c251b409fa
+(converted to decimal: 2067916454627834)
+
+HTTPS Load Balancer Endpoint
+https://dappnet-api.skalenodes.com/v1/elegant-ancha
+
+WebSocket Endpoints
+ws://dappnet-v2-15.skalenodes.com:10066
+wss://dappnet-v2-15.skalenodes.com:10071﻿
+
+IMA Rinkeby ABI
+https://raw.githubusercontent.com/skalenetwork/skale-network/master/releases/dappnet-v2/IMA/1.0.0/abi.json
+
+IMA SChain ABI
+https://github.com/skalenetwork/skale-network/blob/master/releases/dappnet-v2/IMA/1.0.0/proxySchain.json
+
+Supporting IMA Documentation
+
+https://skale.network/docs/developers/products/interchain-messaging-agent/transferring-eth
+https://skale.network/docs/developers/products/interchain-messaging-agent/managing-erc20
+https://skale.network/docs/developers/products/interchain-messaging-agent/managing-erc721
+https://skale.network/docs/developers/products/interchain-messaging-agent/managing-erc1155
+
+*/
