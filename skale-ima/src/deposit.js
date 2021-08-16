@@ -1,6 +1,8 @@
 const Web3 = require("web3");
 const Tx = require("ethereumjs-tx").Transaction;
 
+const amountToSend = '1000';
+
 export function makeDeposit() {
   let rinkebyABIs = require("./contracts/rinkeby_ABIs.json");
   let rinkebyERC20ABI = require("./contracts/rinkeby_ERC20_ABI.json");
@@ -39,7 +41,7 @@ export function makeDeposit() {
   let approve = contractERC20.methods
       .approve(
           depositBoxAddress,
-          web3ForMainnet.utils.toHex(web3ForMainnet.utils.toWei("1", "ether"))
+          web3ForMainnet.utils.toHex(web3ForMainnet.utils.toWei(amountToSend, "ether"))
       )
       .encodeABI();
 
@@ -52,7 +54,7 @@ export function makeDeposit() {
           schainName,
           erc20Address,
           accountForSchain,
-          web3ForMainnet.utils.toHex(web3ForMainnet.utils.toWei("1", "ether"))
+          web3ForMainnet.utils.toHex(web3ForMainnet.utils.toWei(amountToSend, "ether"))
       )
       .encodeABI();
 
