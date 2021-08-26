@@ -10,16 +10,18 @@ describe("MUSIC_Schain.sol", function () {
     let owner;
     let addr1;
     let addr2;
+    this.timeout(500000);
 
     beforeEach(async function () {
         musicoinContract = await ethers.getContractFactory("Music");
+        musicoinFactoryContract = await ethers.getContractFactory("MusicFactory");
+
         [owner, addr1, addr2] = await ethers.getSigners();
 
         musicoinToken = await musicoinContract.deploy(owner.address);
-        
-        musicoinFactoryContract = await ethers.getContractFactory("MusicFactory");
+        await musicoinToken.deployed();
         mcFactory = await musicoinFactoryContract.deploy(musicoinToken.address);
-
+        await mcFactory.deployed();
     });
 
     describe("Deployment", async function () {
@@ -44,13 +46,15 @@ describe("MUSIC_Schain.sol", function () {
     describe("MUSIC_Schain transfer functions", function () {
 
         it("should transfer 20 tokens to addr1", async function () {
-            musicoinToken.transfer(addr1.address, 20);
+            let trxMC = await musicoinToken.connect(owner).transfer(addr1.address, 20);
+            await trxMC.wait();
+
             let balance = await musicoinToken.balanceOf(addr1.address);
             expect(balance).to.equal(20);
         });
-
+        
         it("should transfer 10 tokens from addr1 to addr2", async function () {
-            let trx1 = await musicoinToken.transfer(addr1.address, 20);
+            let trx1 = await musicoinToken.connect(owner).transfer(addr1.address, 20);
             let trx2 = await musicoinToken.connect(addr1).transfer(addr2.address, 10);
             trx1.wait();
             trx2.wait();
@@ -61,14 +65,15 @@ describe("MUSIC_Schain.sol", function () {
         });
         
         it("FAIL: addr1 transferring to self from addr2 without approval", async function () {
-            await expect(musicoinToken.transferFrom(addr2.address, addr1.address, 10)).to.be.revertedWith("VM Exception while processing transaction: reverted with reason string 'Music::transferFrom: transfer amount exceeds spender allowance'");
+            let trxn = await musicoinToken.connect(addr2).transferFrom(addr2.address, addr1.address, 10);
+            await expect(trxn.wait()).to.be.reverted;
             let balance = await musicoinToken.balanceOf(addr2.address);
             expect(balance).to.equal(0);
             assert.equal(await musicoinToken.balanceOf(addr1.address), 0);
         });
         
-        it("It should approve setting an allowance from addr1 to addr2", async function () {
-            let trx1 = await musicoinToken.transfer(addr1.address, 1000);
+       it("It should approve setting an allowance from addr1 to addr2", async function () {
+            let trx1 = await musicoinToken.connect(owner).transfer(addr1.address, 1000);
             trx1.wait();
 	        await musicoinToken.connect(addr1).approve(addr2.address, 100);
 	        let approved = await musicoinToken.allowance(addr1.address, addr2.address);
@@ -76,7 +81,7 @@ describe("MUSIC_Schain.sol", function () {
         });
         
         it("It should approve setting an allowance from addr1 to mcFactory, a contract", async function () {
-            let trx1 = await musicoinToken.transfer(addr1.address, 1000);
+            let trx1 = await musicoinToken.connect(owner).transfer(addr1.address, 1000);
             trx1.wait();
 	        await musicoinToken.connect(addr1).approve(mcFactory.address, 100);
 	        let approved = await musicoinToken.allowance(addr1.address, mcFactory.address);
@@ -84,7 +89,7 @@ describe("MUSIC_Schain.sol", function () {
         });
        
         it("It should allow sending coin from addr1 by owner to addr2", async function () {
-            let trx1 = await musicoinToken.transfer(addr1.address, 1000);
+            let trx1 = await musicoinToken.connect(owner).transfer(addr1.address, 1000);
             trx1.wait();
 	        await musicoinToken.connect(addr1).approve(owner.address, 100);
             await musicoinToken.connect(owner).transferFrom(addr1.address, addr2.address, 50);
@@ -95,12 +100,13 @@ describe("MUSIC_Schain.sol", function () {
 	        let approved = await musicoinToken.allowance(addr1.address, owner.address);
             expect(approved).to.equal(50);
         });
-       
+
         it("It should not transfer anything if there is not enough balance to complete the transaction", async function () {
-            let trx1 = await musicoinToken.transfer(addr1.address, 1000);
+            let trx1 = await musicoinToken.connect(owner).transfer(addr1.address, 1000);
             trx1.wait();
 	        await musicoinToken.connect(addr1).approve(owner.address, 100);
-            await expect(musicoinToken.connect(owner).transferFrom(addr1.address, addr2.address, 500)).to.be.revertedWith("VM Exception while processing transaction: reverted with reason string 'Music::transferFrom: transfer amount exceeds spender allowance");
+            let trx2 = await musicoinToken.connect(owner).transferFrom(addr1.address, addr2.address, 500);
+            await expect(trx2.wait()).to.be.reverted; // With("VM Exception while processing transaction: reverted with reason string 'Music::transferFrom: transfer amount exceeds spender allowance");
             let balance = await musicoinToken.balanceOf(addr1.address);
             expect(balance).to.equal(1000);
             balance = await musicoinToken.balanceOf(addr2.address);
@@ -110,14 +116,15 @@ describe("MUSIC_Schain.sol", function () {
         });
        
         it("It should not transfer anything if there is not enough balance to complete the transaction", async function () {
-            await expect(musicoinToken.transfer(addr1.address, 90000000)).to.be.revertedWith("VM Exception while processing transaction: reverted with reason string 'Music::_transferTokens: transfer amount exceeds balance'");;
+            let trx1 = await musicoinToken.connect(owner).transfer(addr1.address, 90000000);
+            await expect(trx1.wait()).to.be.reverted; // With("VM Exception while processing transaction: reverted with reason string 'Music::_transferTokens: transfer amount exceeds balance'");;
             balance = await musicoinToken.balanceOf(owner.address);
             expect(balance).to.equal(10000000);
         });
         
     });
     
-    
+
     // Delegates, Votes, Transfer tokens, Mint, Burn
     
 });
