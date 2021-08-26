@@ -10,10 +10,11 @@ describe("Artist.sol", function () {
     let mcFactory;
     let artist1;
     let artist2;
-    let artist3;
     let owner;
     let addr1;
     let addr2;
+
+    this.timeout(500000);
 
     beforeEach(async function () {
         artistContract = await ethers.getContractFactory("Artist"); 
@@ -23,7 +24,9 @@ describe("Artist.sol", function () {
 
         // Create and distribute Musicoin for testing
         musicoinToken = await musicoinContract.deploy(owner.address);
+        await musicoinToken.deployed();
         mcFactory = await musicoinFactoryContract.deploy(musicoinToken.address);
+        await mcFactory.deployed();
         await musicoinToken.transfer(addr1.address, 100);
         await musicoinToken.transfer(addr2.address, 100);
 
@@ -32,15 +35,11 @@ describe("Artist.sol", function () {
         await artistTx1.wait();  // Functions that write data to the blockchain don't return any values. They return the transaction hash
         let artistTx2 = await mcFactory.connect(addr2).createArtist(addr2.address, "Artist2", "IMG2", "DESC2", "Social2"); //Create Artist contract instances
         await artistTx2.wait();  // Functions that write data to the blockchain don't return any values. They return the transaction hash
-        // Create with the owner different from the msg sender (B)
-        let artistTx3 = await mcFactory.connect(addr1).createArtist(addr2.address, "Artist3", "IMG3", "DESC3", "Social3"); //Create Artist contract instances
-        await artistTx3.wait();  // Functions that write data to the blockchain don't return any values. They return the transaction hash
 
 
         artistList = await mcFactory.getArtistList();
         artist1 = await artistContract.attach(artistList[0]);
         artist2 = await artistContract.attach(artistList[1]);
-        artist3 = await artistContract.attach(artistList[2]);        
     });
 
     describe("Deployment",async function () {
@@ -49,7 +48,6 @@ describe("Artist.sol", function () {
         it("should deploy artist to the correct owner", async function () {
             expect(await artist1.owner()).to.equal(addr1.address);
             expect(await artist2.owner()).to.equal(addr2.address);
-            expect(await artist3.owner()).to.equal(addr2.address);
         });
 
         it("should give MusicFactory contract 100 spending allowance", async function () {
@@ -61,18 +59,15 @@ describe("Artist.sol", function () {
         it("All initial Artist values should be set and returned correctly after created.", async function () {
 			expect(await artist1.createdBy()).to.equal(addr1.address);
 			expect(await artist2.createdBy()).to.equal(addr2.address);
-			expect(await artist3.createdBy()).to.equal(addr1.address);
         });
 
     });
-    
 
     describe("Artist.sol Basic Tests (GET & SET testing)", async function () {
 
         // THESE FOLLOWING TESTS ARE DONE BELOW WITH THE GET/SET TESTING
         // Check the values in each field to be the same as you set using the get functions. Also,
         //      createdBy should be the msg.sender;
-        //      forwardingAddress should be 0x0
         //      musicToken should be the expected token address 
 
 
@@ -82,7 +77,6 @@ describe("Artist.sol", function () {
         // Using (A) and sending requests from the contract owner account, 
         // update the variables using the set functions and check their values 
         // with the get functions right after
-        //      - setForwardingAddress
         //      - setArtistName
         //      - setImageUrl
         //      - setDescriptionUrl
@@ -95,7 +89,6 @@ describe("Artist.sol", function () {
 
         // Using (A) and sending requests NOT from the correct contract owner account, 
         // update the variables using the set functions.  All requests should FAIL
-        //      - setForwardingAddress
         //      - setArtistName
         //      - setImageUrl
         //      - setDescriptionUrl
@@ -103,31 +96,23 @@ describe("Artist.sol", function () {
         //      - updateDetails
         //      - setOwner
 
-        it("Get and Set tests: Forwarding Address", async function () {
-			expect(await artist1.forwardingAddress()).to.equal('0x0000000000000000000000000000000000000000');
-			await artist1.connect(addr1).setForwardingAddress(owner.address);
-			expect(await artist1.forwardingAddress()).to.equal(owner.address);	
-            // Call removeForwardingAddress.  The forwardingAddress should be 0x0
-			await artist1.connect(addr1).removeForwardingAddress();
-			expect(await artist1.forwardingAddress()).to.equal('0x0000000000000000000000000000000000000000');
-			// Not the owner test
-            await expect(artist1.connect(addr2).setForwardingAddress(owner.address)).to.be.revertedWith('VM Exception while processing transaction: revert with reason "Caller is not owner"');
-        });
-
         it("Get and Set tests: Artist Name", async function () {
 			expect(await artist1.artistName()).to.equal('Artist1');
 			await artist1.connect(addr1).setArtistName('new Artist1');
 			expect(await artist1.artistName()).to.equal('new Artist1');			
 			// Not the owner test
-            await expect(artist1.connect(addr2).setArtistName('FAIL')).to.be.revertedWith('VM Exception while processing transaction: revert with reason "Caller is not owner"');
+            let trx1 = await artist1.connect(addr2).setArtistName('FAIL');
+            await expect(trx1.wait()).to.be.reverted; // With('VM Exception while processing transaction: revert with reason "Caller is not owner"');
         });
+
 
         it("Get and Set tests: Image URL", async function () {
 			expect(await artist1.imageUrl()).to.equal('IMG1');
 			await artist1.connect(addr1).setImageUrl('new IMG1');
 			expect(await artist1.imageUrl()).to.equal('new IMG1');			
 			// Not the owner test
-            await expect(artist1.connect(addr2).setImageUrl('FAIL')).to.be.revertedWith('VM Exception while processing transaction: revert with reason "Caller is not owner"');
+            let trx1 = await artist1.connect(addr2).setImageUrl('FAIL');
+            await expect(trx1.wait()).to.be.reverted; // With('VM Exception while processing transaction: revert with reason "Caller is not owner"');
         });
 
         it("Get and Set tests: Description URL", async function () {
@@ -135,7 +120,8 @@ describe("Artist.sol", function () {
 			await artist1.connect(addr1).setDescriptionUrl('new DESC1');
 			expect(await artist1.descriptionUrl()).to.equal('new DESC1');			
 			// Not the owner test
-            await expect(artist1.connect(addr2).setDescriptionUrl('FAIL')).to.be.reverted;
+            let trx1 = await artist1.connect(addr2).setDescriptionUrl('FAIL');
+            await expect(trx1.wait()).to.be.reverted;
         });
 
         it("Get and Set tests: Social URL", async function () {
@@ -143,7 +129,8 @@ describe("Artist.sol", function () {
 			await artist1.connect(addr1).setSocialUrl('new Social1');
 			expect(await artist1.socialUrl()).to.equal('new Social1');			
 			// Not the owner test
-            await expect(artist1.connect(addr2).setSocialUrl('FAIL')).to.be.reverted;
+            let trx1 = await artist1.connect(addr2).setSocialUrl('FAIL');
+            await expect(trx1.wait()).to.be.reverted;
         });
  
         it("Get and Set tests: UpdateDetails", async function () {
@@ -152,13 +139,15 @@ describe("Artist.sol", function () {
 			expect(await artist1.descriptionUrl()).to.equal('DESC1');
 			expect(await artist1.socialUrl()).to.equal('Social1');
 
-			await artist1.connect(addr1).updateDetails('new Artist1', 'new IMG1', 'new DESC1','new Social1');
+			let trx1 = await artist1.connect(addr1).updateDetails('new Artist1', 'new IMG1', 'new DESC1','new Social1');
+            trx1.wait();
 			expect(await artist1.artistName()).to.equal('new Artist1');			
 			expect(await artist1.imageUrl()).to.equal('new IMG1');			
 			expect(await artist1.descriptionUrl()).to.equal('new DESC1');			
 			expect(await artist1.socialUrl()).to.equal('new Social1');			
 			// Not the owner test
-            await expect(artist1.connect(addr2).updateDetails('FAIL','FAIL','FAIL','FAIL')).to.be.reverted;
+            trx1 = await artist1.connect(addr2).updateDetails('FAIL','FAIL','FAIL','FAIL');
+            await expect(trx1.wait()).to.be.reverted;
         });
        
         it("Get and Set tests: owner", async function () {
@@ -166,9 +155,12 @@ describe("Artist.sol", function () {
 			await artist1.connect(addr1).setOwner(addr2.address);
             expect(await artist1.owner()).to.equal(addr2.address);
 			// Not the owner test
-            await expect(artist1.connect(addr1).setSocialUrl('FAIL')).to.be.reverted;
+            let trx1 = await artist1.connect(addr1).setSocialUrl('FAIL');
+            await expect(trx1.wait()).to.be.reverted;
         });
+
      });
+
 
     describe("Artist.sol Interactive Tests", async function () {
 
@@ -181,46 +173,34 @@ describe("Artist.sol", function () {
                 assert.equal(followers, 1);
                 expect(await artist1.following(owner.address)).to.equal(true);
                 expect(await artist1.following(addr1.address)).to.equal(false);
+
 	            // Call unfollow().  The caller should be false in the "following" array
-                await artist1.connect(owner).unfollow()
+                let trx1 = await artist1.connect(owner).unfollow();
+                trx1.wait();
                 expect(await artist1.following(owner.address)).to.equal(false);
+
 	            // Change accounts.  Call follow().  The caller should now be true in the "following" array.  The previous account should still be false
-                await artist1.connect(addr1).follow()
+                trx1 = await artist1.connect(addr1).follow();
+                trx1.wait();
                 expect(await artist1.following(owner.address)).to.equal(false);
                 expect(await artist1.following(addr1.address)).to.equal(true);
             });
-        });
-        
-        describe("Testing recieve() **** INCOMPLETE TESTS.  NEED CODE FOR SENDING GAS WITH REQUESTS", async function () {
-
-            // Call the Artist object without any function named.  Send ETH with the call.
-            //      The contract should have a balance matching what was sent
-//			await artist1.connect(addr1);
-
-            // Call setForwardingAddress and make it a known account
-//			await artist1.connect(addr1).setForwardingAddress(owner.address);
-//			expect(await artist1.forwardingAddress()).to.equal(owner.address);	
-
-            // Call the Artist object without any function named.  Send ETH with the call.
-            //      - The account you set should have received a balance matching what was sent. The 
-            //        Artist balance should be the same as before making the call
-            //          - This would have been an issue before moving to Skale, but probably not 
-            //            important now if we lose ethSKL, just messy.  Should all balances be sent as soon as a forwarding address is set? Ben Gyles
-
-
         });
 
         describe("Testing TIPPING function", async function () {
             // Use an account that has not approved mcFactory to use their funds
             it("should fail tipping the artist", async function () {
-                await expect(artist1.connect(addr2).tip(2)).to.be.revertedWith('Music::transferFrom: transfer amount exceeds spender allowance');
+                let trx = await artist1.connect(addr2).tip(2);
+                await expect(trx.wait()).to.be.reverted; // With('Music::transferFrom: transfer amount exceeds spender allowance');
                 expect(await artist1.tipTotal()).to.equal(0);
             })
 
             // Use an account that is the owner
             it("should tip the artist 2 Musicoin using the contract owner (no balance change)", async function () {
-		        await musicoinToken.connect(addr1).approve(mcFactory.address, 100);
-                await artist1.connect(addr1).tip(2);
+		        let trx = await musicoinToken.connect(addr1).approve(mcFactory.address, 100);
+                trx.wait();
+                trx = await artist1.connect(addr1).tip(2);
+                trx.wait();
                 expect(await artist1.tipTotal()).to.equal(2);
             //      - Sender's $MUSIC balance should be reduced by $MUSIC requested to send
             })
@@ -234,8 +214,8 @@ describe("Artist.sol", function () {
 				let initialSenderFunds = await musicoinToken.balanceOf(addr2.address);
 				let initialOwnerFunds = await musicoinToken.balanceOf(await artist1.owner());
 				let allowance = 100;
-		        await musicoinToken.connect(addr2).approve(mcFactory.address, allowance);
-                await artist1.connect(addr2).tip(tipAmount);
+		        (await musicoinToken.connect(addr2).approve(mcFactory.address, allowance)).wait();
+                (await artist1.connect(addr2).tip(tipAmount)).wait();
                 expect(await artist1.tipTotal()).to.equal(tipAmount);
                 expect(await artist1.tipCount()).to.equal(1);
 
@@ -262,8 +242,9 @@ describe("Artist.sol", function () {
 				let initialSenderFunds = await musicoinToken.balanceOf(addr1.address);
 				let initialOwnerFunds = await musicoinToken.balanceOf(await artist1.owner());
 				let allowance = 100;
-		        await musicoinToken.connect(addr1).approve(mcFactory.address, allowance);
+		        (await musicoinToken.connect(addr1).approve(mcFactory.address, allowance)).wait();
                 let tipTx = await artist1.connect(addr1).tip(tipAmount);
+                tipTx.wait();
                 expect(await artist1.tipTotal()).to.equal(tipAmount);
                 expect(await artist1.tipCount()).to.equal(1);
 
@@ -278,9 +259,6 @@ describe("Artist.sol", function () {
 				// Balance of artist owner is increased
 				let artistBalance = await musicoinToken.balanceOf(await artist1.owner());
                 expect(artistBalance).to.equal(initialOwnerFunds);
-                
-                tipTx.wait();
-                console.log(tipTx.data); // This should include the correct event emit information ** how to check it automatically?
             })
             
             // Use an account that is NOT the owner
@@ -292,10 +270,12 @@ describe("Artist.sol", function () {
 				let initialSenderFunds = await musicoinToken.balanceOf(addr2.address);
 				let initialOwnerFunds = await musicoinToken.balanceOf(await artist1.owner());
 				let allowance = 1000000000;
-		        await musicoinToken.connect(addr2).approve(mcFactory.address, allowance);
-                await expect(artist1.connect(addr2).tip(tipAmount)).to.be.revertedWith('Music::transferFrom: transfer amount exceeds spender allowance');
+		        (await musicoinToken.connect(addr2).approve(mcFactory.address, allowance)).wait();
+                let trx = await artist1.connect(addr2).tip(tipAmount);
+                await expect(trx.wait()).to.be.reverted; // With('Music::transferFrom: transfer amount exceeds spender allowance');
 		        tipAmount = 1000000000;
-                await expect(artist1.connect(addr2).tip(tipAmount)).to.be.revertedWith('Music::_transferTokens: transfer amount exceeds balance');
+                trx = await artist1.connect(addr2).tip(tipAmount);
+                await expect(trx.wait()).to.be.revertedWith('Music::_transferTokens: transfer amount exceeds balance');
             })
         });
 
@@ -303,33 +283,37 @@ describe("Artist.sol", function () {
         // PAYOUT Currently there are no funds collected for payout using this contract, but maybe they are sent from other contract transfers ???
 
 			it("should transfer 20 tokens to artist1 and payout some to an account", async function () {
-				musicoinToken.transfer(artist1.address, 20);
+				(await musicoinToken.transfer(artist1.address, 20)).wait();
 				let artistBalance = await musicoinToken.balanceOf(artist1.address);
 				let addr2Balance = await musicoinToken.balanceOf(addr2.address);
 				let addr1Balace = await musicoinToken.balanceOf(addr1.address);
 				expect(artistBalance).to.equal(20);
 				let payoutAmount = 5;
-				await artist1.connect(addr1).payOut(addr2.address, payoutAmount);
+				(await artist1.connect(addr1).payOut(addr2.address, payoutAmount)).wait();
 				expect(await musicoinToken.balanceOf(artist1.address)).to.equal(artistBalance.sub(payoutAmount));
 				expect(await musicoinToken.balanceOf(addr2.address)).to.equal(addr2Balance.add(payoutAmount));          
-			
-				await expect(artist1.connect(addr1).payOut(addr2.address, 1000)).to.be.revertedWith('Music::_transferTokens: transfer amount exceeds balance');
-				await expect(artist1.connect(addr2).payOut(addr2.address, 1000)).to.be.revertedWith('Caller is not owner');
+                
+                let trx = await artist1.connect(addr1).payOut(addr2.address, 1000);
+				await expect(trx.wait()).to.be.reverted; // With('Music::_transferTokens: transfer amount exceeds balance');
+                trx = await artist1.connect(addr2).payOut(addr2.address, 1000);
+				await expect(trx.wait()).to.be.reverted; // With('Caller is not owner');
 			});
 
 			it("should transfer 20 tokens to artist1 and payout all to the owner", async function () {
 				let payoutAmount = 30;
-				musicoinToken.transfer(artist1.address, payoutAmount);
+				(await musicoinToken.transfer(artist1.address, payoutAmount)).wait();
 				let artistBalance = await musicoinToken.balanceOf(artist1.address);
 				let addr2Balance = await musicoinToken.balanceOf(addr2.address);
 				expect(artistBalance).to.equal(payoutAmount);
 
-				await artist1.connect(addr1).payOutBalance(addr2.address);
+				(await artist1.connect(addr1).payOutBalance(addr2.address)).wait();
 				expect(await musicoinToken.balanceOf(artist1.address)).to.equal(0);
-				expect(await musicoinToken.balanceOf(addr2.address)).to.equal(addr2Balance.add(payoutAmount));          
-				await expect(artist1.connect(addr2).payOutBalance(addr2.address)).to.be.revertedWith('Caller is not owner');
+				expect(await musicoinToken.balanceOf(addr2.address)).to.equal(addr2Balance.add(payoutAmount));  
+                let trx = await artist1.connect(addr2).payOutBalance(addr2.address);        
+				await expect(trx.wait()).to.be.revertedWith('Caller is not owner');
 			});
-       });
+
+        });
     });
 });
 
