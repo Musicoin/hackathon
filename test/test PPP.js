@@ -10,13 +10,13 @@ describe("PayPerPlay.sol", function () {
     let mcFactory;
     let artist1;
     let artist2;
-    let artist3;
     let ppp1;
     let ppp2;
     let ppp3;
     let owner;
     let addr1;
     let addr2;
+    this.timeout(500000);
 
     beforeEach(async function () {
         pppContract = await ethers.getContractFactory("PayPerPlay"); 
@@ -27,47 +27,54 @@ describe("PayPerPlay.sol", function () {
 
         // Create and distribute Musicoin for testing
         musicoinToken = await musicoinContract.deploy(owner.address);
+        await musicoinToken.deployed();
         mcFactory = await musicoinFactoryContract.deploy(musicoinToken.address);
-        await musicoinToken.transfer(addr1.address, 100000);
-        await musicoinToken.transfer(addr2.address, 100000);
-        await musicoinToken.transfer(addr3.address, 100000);
-        await musicoinToken.transfer(addr4.address, 100000);
-        await musicoinToken.transfer(addr5.address, 99);
-        
+        await mcFactory.deployed();
+
+        let trx1 = await musicoinToken.transfer(addr1.address, 100000);
+        let trx2 = await musicoinToken.transfer(addr2.address, 100000);
+        let trx3 = await musicoinToken.transfer(addr3.address, 100000);
+        let trx4 = await musicoinToken.transfer(addr4.address, 100000);
+        let trx5 = await musicoinToken.transfer(addr5.address, 99);
 
 		// Create Artists for testing
         let artistTx1 = await mcFactory.connect(addr1).createArtist(addr1.address, "Artist1", "IMG1", "DESC1", "Social1"); //Create Artist contract instances
-        await artistTx1.wait();  // Functions that write data to the blockchain don't return any values. They return the transaction hash
         let artistTx2 = await mcFactory.connect(addr2).createArtist(addr2.address, "Artist2", "IMG2", "DESC2", "Social2"); //Create Artist contract instances
-        await artistTx2.wait();  // Functions that write data to the blockchain don't return any values. They return the transaction hash
-        // Create with the owner different from the msg sender (B)
-        let artistTx3 = await mcFactory.connect(addr1).createArtist(addr2.address, "Artist3", "IMG3", "DESC3", "Social3"); //Create Artist contract instances
-        await artistTx3.wait();  // Functions that write data to the blockchain don't return any values. They return the transaction hash
+
+        // Make sure the blocks have been written before continuing
+        trx1.wait(); //console.log(new Date().toTimeString());
+        trx2.wait(); //console.log(new Date().toTimeString());
+        trx3.wait(); //console.log(new Date().toTimeString());
+        trx4.wait(); //console.log(new Date().toTimeString());
+        trx5.wait(); //console.log(new Date().toTimeString());
+        artistTx1.wait();  // Functions that write data to the blockchain don't return any values. They return the transaction hash
+        artistTx2.wait();  // Functions that write data to the blockchain don't return any values. They return the transaction hash
 
         artistList = await mcFactory.getArtistList();
         artist1 = await artistContract.attach(artistList[0]);
         artist2 = await artistContract.attach(artistList[1]);
-        artist3 = await artistContract.attach(artistList[2]);     
         
         // Create PPP for testing
         let contributors = [addr2.address, owner.address];
         let share = [3, 5];
  		let contentByte32 = ethers.utils.formatBytes32String("Content1"); // or use "0x6c00000000000000000000000000000000000000000000000000000000000001"; // ** unsure what this should really be but the contract functionality doesnt require specific values
         let pppTx1 = await mcFactory.connect(addr1).createPayPerPlay(addr1.address, "Title1", "Name1", artist1.address, 100, "rURL1", contentByte32, "iURL1", "mURL1", contributors, share); //Create Artist contract instances
-        await pppTx1.wait();  // Functions that write data to the blockchain don't return any values. They return the transaction hash
         
         contributors = [addr2.address, owner.address, addr1.address];
         share = [3, 5, 6];
  		contentByte32 = ethers.utils.formatBytes32String("Content2"); // or use "0x6c00000000000000000000000000000000000000000000000000000000000002"; // ** unsure what this should really be but the contract functionality doesnt require specific values
         let pppTx2 = await mcFactory.connect(addr2).createPayPerPlay(addr4.address, "Title2", "Name2", artist1.address, 100, "rURL2", contentByte32, "iURL2", "mURL2", contributors, share); //Create Artist contract instances
-        await pppTx2.wait();  // Functions that write data to the blockchain don't return any values. They return the transaction hash
         
         contributors = [addr1.address];
         share = [1];
  		contentByte32 = ethers.utils.formatBytes32String("Content3"); // or use "0x6c00000000000000000000000000000000000000000000000000000000000003"; // ** unsure what this should really be but the contract functionality doesnt require specific values
         let pppTx3 = await mcFactory.connect(addr2).createPayPerPlay(owner.address, "Title1", "Name1", artist2.address, 100, "rURL3", contentByte32, "iURL3", "mURL3", contributors, share); //Create Artist contract instances
-        await pppTx3.wait();  // Functions that write data to the blockchain don't return any values. They return the transaction hash
 
+        // Ensure blocks have been written
+        pppTx1.wait();  // Functions that write data to the blockchain don't return any values. They return the transaction hash
+        pppTx2.wait();  // Functions that write data to the blockchain don't return any values. They return the transaction hash
+        pppTx3.wait();  // Functions that write data to the blockchain don't return any values. They return the transaction hash
+        
         let pppList = await mcFactory.getPayPerPlayList();
         ppp1 = await pppContract.attach(pppList[0]);
         ppp2 = await pppContract.attach(pppList[1]);
@@ -83,7 +90,7 @@ describe("PayPerPlay.sol", function () {
          });
          
         it("should give MusicFactory contract 100 spending allowance", async function () {
-   	        await musicoinToken.connect(addr1).approve(mcFactory.address, 100);
+   	        (await musicoinToken.connect(addr1).approve(mcFactory.address, 100)).wait();
             let allowance = await musicoinToken.allowance(addr1.address, mcFactory.address);
             assert.equal(allowance, 100);
         });
@@ -149,58 +156,65 @@ describe("PayPerPlay.sol", function () {
 
         it("Get and Set tests: Title", async function () {
 			expect(await ppp1.title()).to.equal('Title1');
-			await ppp1.connect(addr1).updateTitle('new Title1');
+			(await ppp1.connect(addr1).updateTitle('new Title1')).wait();
 			expect(await ppp1.title()).to.equal('new Title1');			
 			// Not the owner test
-            await expect(ppp1.connect(addr2).updateTitle('FAIL')).to.be.reverted;
+            let trx = await ppp1.connect(addr2).updateTitle('FAIL');
+            await expect(trx.wait()).to.be.reverted;
         });
 
         it("Get and Set tests: Artist Name", async function () {
 			expect(await ppp1.artistName()).to.equal('Name1');
-			await ppp1.connect(addr1).updateArtistName('new Artist1');
+			(await ppp1.connect(addr1).updateArtistName('new Artist1')).wait();
 			expect(await ppp1.artistName()).to.equal('new Artist1');			
 			// Not the owner test
-            await expect(ppp1.connect(addr2).updateArtistName('FAIL')).to.be.reverted;
+            let trx = await ppp1.connect(addr2).updateArtistName('FAIL');
+            await expect(trx.wait()).to.be.reverted;
         });
 
         it("Get and Set tests: Resource URL", async function () {
 			expect(await ppp1.resourceUrl()).to.equal('rURL1');
-			await ppp1.connect(addr1).updateResourceUrl('new rURL1');
+			(await ppp1.connect(addr1).updateResourceUrl('new rURL1')).wait();
 			expect(await ppp1.resourceUrl()).to.equal('new rURL1');			
 			// Not the owner test
-            await expect(ppp1.connect(addr2).updateResourceUrl('FAIL')).to.be.reverted;
+            let trx = await ppp1.connect(addr2).updateResourceUrl('FAIL');
+            await expect(trx.wait()).to.be.reverted;
         });
 
         it("Get and Set tests: Image URL", async function () {
 			expect(await ppp1.imageUrl()).to.equal('iURL1');
-			await ppp1.connect(addr1).updateImageUrl('new iURL1');
+			(await ppp1.connect(addr1).updateImageUrl('new iURL1')).wait();
 			expect(await ppp1.imageUrl()).to.equal('new iURL1');			
 			// Not the owner test
-            await expect(ppp1.connect(addr2).updateImageUrl('FAIL')).to.be.reverted;
+            let trx = await ppp1.connect(addr2).updateImageUrl('FAIL');
+            await expect(trx.wait()).to.be.reverted;
         });
 
         it("Get and Set tests: Artist Address", async function () {
 			expect(await ppp1.artistProfileAddress()).to.equal(artist1.address);
-			await ppp1.connect(addr1).updateArtistAddress(artist2.address);
+			(await ppp1.connect(addr1).updateArtistAddress(artist2.address)).wait();
 			expect(await ppp1.artistProfileAddress()).to.equal(artist2.address);			
 			// Not the owner test
-            await expect(ppp1.connect(addr2).updateArtistAddress(artist2.address)).to.be.reverted;
+            let trx = await ppp1.connect(addr2).updateArtistAddress(artist2.address);
+            await expect(trx.wait()).to.be.reverted;
         });
 
         it("Get and Set tests: Metadata URL", async function () {
 			expect(await ppp1.metadataUrl()).to.equal('mURL1');
-			await ppp1.connect(addr1).updateMetadataUrl('new mURL1');
+			(await ppp1.connect(addr1).updateMetadataUrl('new mURL1')).wait();
 			expect(await ppp1.metadataUrl()).to.equal('new mURL1');			
 			// Not the owner test
-            await expect(ppp1.connect(addr2).updateMetadataUrl('FAIL')).to.be.reverted;
+            let trx = await ppp1.connect(addr2).updateMetadataUrl('FAIL');
+            await expect(trx.wait()).to.be.reverted;
         });
 
         it("Get and Set tests: owner", async function () {
             expect(await ppp1.owner()).to.equal(addr1.address);
-			await ppp1.connect(addr1).transferOwnership(addr2.address);
+			(await ppp1.connect(addr1).transferOwnership(addr2.address)).wait();
             expect(await ppp1.owner()).to.equal(addr2.address);
 			// Not the owner test
-            await expect(ppp1.connect(addr1).updateMetadataUrl('FAIL')).to.be.reverted;
+            let trx = await ppp1.connect(addr1).updateMetadataUrl('FAIL');
+            await expect(trx.wait()).to.be.reverted;
         });
         
         it("Get and Set tests: license", async function () {
@@ -215,7 +229,7 @@ describe("PayPerPlay.sol", function () {
             // Updates work
         	let contributors = [addr1.address, addr2.address, owner.address];
         	let share = [8, 1, 4];
-            await ppp1.connect(addr1).updateLicense(5, contributors, share);
+            (await ppp1.connect(addr1).updateLicense(5, contributors, share)).wait();
             
             // New values are returned
             expect(await ppp1.musicPerPlay()).to.equal(5);
@@ -230,13 +244,18 @@ describe("PayPerPlay.sol", function () {
             // Updates fail
         	contributors = [addr1.address, addr2.address, owner.address];
         	share = [8, 1];
-            await expect(ppp1.connect(addr1).updateLicense(5, contributors, share)).to.be.revertedWith('# of contributors doesnt match the # of shares');
-            await expect(ppp1.connect(addr1).updateLicense(5, contributors, [])).to.be.revertedWith('# of contributors doesnt match the # of shares');
-            await expect(ppp1.connect(addr1).updateLicense(5, [], share)).to.be.revertedWith('# of contributors doesnt match the # of shares');
-            await expect(ppp1.connect(addr1).updateLicense(5, [], [])).to.not.be.reverted;
+            let trx1 = await ppp1.connect(addr1).updateLicense(5, contributors, share);
+            let trx2 = await ppp1.connect(addr1).updateLicense(5, contributors, []);
+            let trx3 = await ppp1.connect(addr1).updateLicense(5, [], share);
+            let trx4 = await ppp1.connect(addr1).updateLicense(5, [], []);
+            await expect(trx1.wait()).to.be.reverted; // With('# of contributors doesnt match the # of shares');
+            await expect(trx2.wait()).to.be.reverted; // With('# of contributors doesnt match the # of shares');
+            await expect(trx3.wait()).to.be.reverted; // With('# of contributors doesnt match the # of shares');
+            await expect(trx4.wait()).to.not.be.reverted;
 
             // check security
-            await expect(ppp1.connect(addr2).updateLicense(5, contributors, share)).to.be.revertedWith('Caller not owner');
+            let trx5 = await ppp1.connect(addr2).updateLicense(5, contributors, share);
+            await expect(trx5.wait()).to.be.reverted; // With('Caller not owner');
 
        });
     });
@@ -261,9 +280,11 @@ describe("PayPerPlay.sol", function () {
 			expect(await ppp2.playCount()).to.equal(0);
 			expect(await ppp2.totalEarned()).to.equal(0);
 
-        	await expect(ppp2.connect(addr3).play()).to.be.revertedWith('Music::transferFrom: transfer amount exceeds spender allowance');
-   	        await musicoinToken.connect(addr3).approve(mcFactory.address, 500);
-   	        ppp2.connect(addr3).play();
+            let trx = await ppp2.connect(addr3).play();
+        	await expect(trx.wait()).to.be.reverted; // With('Music::transferFrom: transfer amount exceeds spender allowance');
+   	        
+            (await musicoinToken.connect(addr3).approve(mcFactory.address, 500)).wait();
+   	        (await ppp2.connect(addr3).play()).wait();
 
   			//contributors = [addr2.address, owner.address, addr1.address];
   			//share = [3, 5, 6];
@@ -282,10 +303,13 @@ describe("PayPerPlay.sol", function () {
 			
 			
 			// Test with insufficient funds
-   	        await musicoinToken.connect(addr5).approve(mcFactory.address, 100);
-   	        await expect(ppp2.connect(addr5).play()).to.be.reverted;
-	        await musicoinToken.transfer(addr5.address, 100);
-  	        await expect(ppp2.connect(addr5).play()).to.not.be.reverted;
+   	        (await musicoinToken.connect(addr5).approve(mcFactory.address, 100)).wait();
+   	        trx = await ppp2.connect(addr5).play();
+            await expect(trx.wait()).to.be.reverted;
+	        
+            (await musicoinToken.transfer(addr5.address, 100)).wait();
+  	        trx = await ppp2.connect(addr5).play();
+            await expect(trx.wait()).to.not.be.reverted;
         });
     });
 
@@ -307,7 +331,8 @@ describe("PayPerPlay.sol", function () {
 
 		// Use an account that has not approved mcFactory to use their funds
 		it("should fail tipping the ppp", async function () {
-			await expect(ppp3.connect(addr2).tip(2)).to.be.revertedWith('Music::transferFrom: transfer amount exceeds spender allowance');
+            let trx = await ppp3.connect(addr2).tip(2);
+			await expect(trx.wait()).to.be.reverted; // With('Music::transferFrom: transfer amount exceeds spender allowance');
 			expect(await ppp3.totalTipped()).to.equal(0);
 		});
 
@@ -315,7 +340,7 @@ describe("PayPerPlay.sol", function () {
 		it("should tip the artist 2 Musicoin using the contract owner (no balance change)", async function () {
 			let tipAmount = 2;
 			let allowance = 100;
-			await musicoinToken.connect(addr3).approve(mcFactory.address, allowance);
+			(await musicoinToken.connect(addr3).approve(mcFactory.address, allowance)).wait();
 			let contributorBalance = await musicoinToken.balanceOf(addr1.address);
 			let senderBalance = await musicoinToken.balanceOf(addr3.address);
 			let initialOwnerFunds = await musicoinToken.balanceOf(await ppp3.owner());
@@ -366,10 +391,11 @@ describe("PayPerPlay.sol", function () {
             // DISTRIBUTE BALANCE (TBD. Currently there are no funds collected for payout using this contract)
     describe("PayPerPlay.sol distributeBalance Tests", async function () {
 		it("should distribute the PPP contract balance to the contributors (not the owner)", async function () {
-			await expect(ppp1.connect(addr5).distributeBalance()).to.be.revertedWith('Caller not owner');
+			let trx = await ppp1.connect(addr5).distributeBalance();
+            await expect(trx.wait()).to.be.reverted; // With('Caller not owner');
 			
 			expect(await musicoinToken.balanceOf(ppp1.address)).to.equal(0);
-			await musicoinToken.transfer(ppp1.address, 1000);
+			(await musicoinToken.transfer(ppp1.address, 1000)).wait();
 			expect(await musicoinToken.balanceOf(ppp1.address)).to.equal(1000);
 
 			let addr1Balance = await musicoinToken.balanceOf(addr1.address);
@@ -387,23 +413,27 @@ describe("PayPerPlay.sol", function () {
 	    });
     });
     
-    
     describe("PayPerPlay.sol Kill Tests", async function () {
 		it("should distribute the PPP contract balance to the contributors (not the owner) and destroy the contract", async function () {
-			expect(ppp1.getContributorsLength()).to.not.be.reverted;
-			await expect(ppp1.connect(addr5).kill(true)).to.be.revertedWith('Caller not owner');
-			await expect(ppp1.connect(addr5).kill(false)).to.be.revertedWith('Caller not owner');
 
-			expect(await musicoinToken.balanceOf(ppp1.address)).to.equal(0);
-			await musicoinToken.transfer(ppp1.address, 1000);
+            await expect(ppp1.getContributorsLength()).to.not.be.reverted;
+
+            let trx = await ppp1.connect(addr5).kill(true);
+			await expect(trx.wait()).to.be.reverted; //With('Caller not owner');
+            trx = await ppp1.connect(addr5).kill(false);
+			await expect(trx.wait()).to.be.reverted; //With('Caller not owner');
+
+            expect(await musicoinToken.balanceOf(ppp1.address)).to.equal(0);
+			(await musicoinToken.connect(owner).transfer(ppp1.address, 1000)).wait();
 			expect(await musicoinToken.balanceOf(ppp1.address)).to.equal(1000);
 
 			let addr1Balance = await musicoinToken.balanceOf(addr1.address);
 			let addr2Balance = await musicoinToken.balanceOf(addr2.address);
 			let ownerBalance = await musicoinToken.balanceOf(owner.address);
 
-			let tx = await ppp1.connect(addr1).kill(true);
-			tx.wait();
+// THIS FAILS - ProviderError: Transaction gas amount is less than the intrinsic gas amount for this transaction type.
+            trx = await ppp1.connect(addr1).kill(true);
+			trx.wait();
 			expect(await musicoinToken.balanceOf(ppp1.address)).to.equal(0);
 			expect(addr1Balance).to.equal(await musicoinToken.balanceOf(addr1.address));
 	        //contributors = [addr2.address, owner.address];
@@ -411,35 +441,28 @@ describe("PayPerPlay.sol", function () {
 			expect(addr2Balance.add(1000/8*3)).to.equal(await musicoinToken.balanceOf(addr2.address));
 			expect(ownerBalance.add(1000/8*5)).to.equal(await musicoinToken.balanceOf(owner.address));
 
-			expect(ppp1.getContributorsLength()).to.be.reverted;
+			await expect(ppp1.getContributorsLength()).to.be.reverted;
 	    });    
 
 		it("should NOT distribute the PPP contract balance to the contributors and destroy the contract with balance", async function () {
-			expect(ppp1.getContributorsLength()).to.not.be.reverted;
-
-			expect(await musicoinToken.balanceOf(ppp1.address)).to.equal(0);
-			await musicoinToken.transfer(ppp1.address, 1000);
+			(await musicoinToken.transfer(ppp1.address, 1000)).wait();
 			expect(await musicoinToken.balanceOf(ppp1.address)).to.equal(1000);
 
 			let addr1Balance = await musicoinToken.balanceOf(addr1.address);
 			let addr2Balance = await musicoinToken.balanceOf(addr2.address);
 			let ownerBalance = await musicoinToken.balanceOf(owner.address);
 
-			let tx = await ppp1.connect(addr1).kill(false);
-			tx.wait();
-			expect(await musicoinToken.balanceOf(ppp1.address)).to.equal(1000);
+// THIS FAILS - ProviderError: Transaction gas amount is less than the intrinsic gas amount for this transaction type.
+            let trx = await ppp1.connect(addr1).kill(false);
+			trx.wait();
+            expect(await musicoinToken.balanceOf(ppp1.address)).to.equal(1000);
 			expect(addr1Balance).to.equal(await musicoinToken.balanceOf(addr1.address));
 	        //contributors = [addr2.address, owner.address];
     	    //share = [3, 5];
 			expect(addr2Balance).to.equal(await musicoinToken.balanceOf(addr2.address));
 			expect(ownerBalance).to.equal(await musicoinToken.balanceOf(owner.address));
-
-			expect(ppp1.getContributorsLength()).to.be.reverted;
+ 			await expect(ppp1.getContributorsLength()).to.be.reverted;
 	    });   
-
 	});
-        
-        
-        
 });
 
