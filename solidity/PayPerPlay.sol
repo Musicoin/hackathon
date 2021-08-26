@@ -178,8 +178,9 @@ contract PayPerPlay {
 
     function kill(bool _distributeBalanceFirst) public adminOnly {
         if (_distributeBalanceFirst) {
-            distributeBalance(); // is there any risk here?
+             distributeBalance(); // is there any risk here?
         }
+
         selfdestruct(payable(owner));
     }
 
@@ -210,7 +211,5 @@ contract PayPerPlay {
         }
 
         totalEarned += amount; // Moved here for more accurate accounting in case there is coin lost due to contribution ratio rounding down of decimals
-        
-        
     }
 }
