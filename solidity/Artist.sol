@@ -11,8 +11,7 @@ contract Artist {
     
     address public owner;
    	address public createdBy;
-    address payable public forwardingAddress;  //rw is this only for sending coin to an address when the receive function is used?
-
+ 
    	string public artistName;
 
   	string public imageUrl;
@@ -42,14 +41,9 @@ contract Artist {
 		socialUrl = _socialUrl;
         owner = _owner;
         createdBy = _createdBy;
-        forwardingAddress = payable(address(0));
 
         musicFactory = MusicFactory(msg.sender);
     }
-
-	// Not required on the Skale network as this will be sklETH and returned
-    //receive () external payable {
-    //}
 
     event tipping(address tipper, address benefactor, uint tip);
     
@@ -91,14 +85,6 @@ contract Artist {
         imageUrl = _imageUrl;
         descriptionUrl = _descriptionUrl;
         socialUrl = _socialUrl;
-    }
-
-    function removeForwardingAddress() public onlyOwner {
-        forwardingAddress = payable(address(0));
-    }
-
-    function setForwardingAddress(address payable _forwardingAddress) public onlyOwner {
-        forwardingAddress = _forwardingAddress;
     }
 
     function setOwner(address _owner) public onlyOwner {
