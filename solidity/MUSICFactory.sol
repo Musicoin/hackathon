@@ -76,7 +76,7 @@ contract MusicFactory {
     }
     
 	// Does this need to be onlyOwner?
-    function createPayPerPlay(address _owner, string memory _title, string memory _artistName, address _artistProfileAddress, uint _musicPerPlay, string memory _resourceUrl, bytes32 _contentType, string memory _imageUrl, string memory _metadataUrl, address[] memory _contributors, uint[] memory _contributorShares) public {
+    function createPayPerPlay(address payable _owner, string memory _title, string memory _artistName, address _artistProfileAddress, uint _musicPerPlay, string memory _resourceUrl, bytes32 _contentType, string memory _imageUrl, string memory _metadataUrl, address[] memory _contributors, uint[] memory _contributorShares) public {
     	PayPerPlay newPPP = new PayPerPlay(_owner, _title, _artistName, _artistProfileAddress, _musicPerPlay, _resourceUrl, _contentType, _imageUrl, _metadataUrl, _contributors, _contributorShares);
     	payPerPlayList.push(address(newPPP)); 	 
 		payPerPlayMap[address(newPPP)] = newPPP;
