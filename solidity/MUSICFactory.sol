@@ -42,6 +42,11 @@ contract MusicFactory {
     	musicTokenAddress = _musicTokenAddress;
     }
 
+    function kill() public onlyOwner {
+        // This will not kill all the contracts the factory created.  That will have to be done manually via the Artist and PayPerPlay contracts
+        // Artist and PayPerPlay contracts can be updated by owner to new MusicFactory contracts
+        selfdestruct(payable(owner));
+    }
 
     function setOwner(address _owner) public onlyOwner {
         owner = _owner;
