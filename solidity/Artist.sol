@@ -45,6 +45,11 @@ contract Artist {
         musicFactory = MusicFactory(msg.sender);
     }
 
+    function kill() public onlyOwner {
+        payOutBalance(payable(owner));
+        selfdestruct(payable(owner));
+    }
+
     event tipping(address tipper, address benefactor, uint tip);
     
     function tip(uint _tipAmount) public payable {
@@ -91,6 +96,13 @@ contract Artist {
         owner = _owner;
     }
 
+    function updateMusicFactory(MusicFactory _musicFactory) public onlyOwner {
+        musicFactory = _musicFactory;
+    }
+    function getMusicFactoryAddress() public view returns (MusicFactory) {
+        return musicFactory;
+    }
+    
     function setArtistName(string memory _artistName) public onlyOwner {
         artistName = _artistName;
     }
