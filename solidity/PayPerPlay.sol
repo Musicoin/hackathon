@@ -110,6 +110,14 @@ contract PayPerPlay {
         emit transferEvent(oldOwner, newOwner);
     }
 
+    function updateMusicFactory(MusicFactory _musicFactory) public adminOnly {
+        musicFactory = _musicFactory;
+    }
+
+    function getMusicFactoryAddress() public view returns (MusicFactory) {
+        return musicFactory;
+    }
+
     function updateTitle(string memory newTitle) public adminOnly {
         string memory oldTitle = title;
         title = newTitle;
@@ -181,6 +189,9 @@ contract PayPerPlay {
              distributeBalance(); // is there any risk here?
         }
 
+        // This will send all remaining Musicoin to the owner
+        distributePaymentTo(musicFactory.getMusicToken().balanceOf(address(this)), address(this), owner);
+        // This will send all remaining gas to the owner.  This does not hanndle MUSICOIN
         selfdestruct(payable(owner));
     }
 
@@ -194,20 +205,19 @@ contract PayPerPlay {
     }
 
     function distributePayment(uint _total, address fromAccount) withDistributionLock internal {
+        uint portion = 0;
         for (uint c=0; c < contributors.length; c++) {
-            distributePaymentTo(_total, c, fromAccount);
+            portion = contributorShares[c] * _total;
+            distributePaymentTo(portion.div(totalShares), fromAccount, contributors[c]);
         }
     }
 
-    function distributePaymentTo(uint _total, uint cIdx, address fromAccount) internal {
-        uint portion = contributorShares[cIdx] * _total;
-        uint amount = portion.div(totalShares);
-
+    function distributePaymentTo(uint amount, address fromAccount, address toAccount) internal {
 		// If this is a regular payment request then it must pay via the requester's funds using TransferFrom, otherwise it is being paid via this contract and uses Transfer only
         if ((amount > 0) && (fromAccount != address(this))) {
-            require(musicFactory.transferFrom(fromAccount, contributors[cIdx], amount));
+            require(musicFactory.transferFrom(fromAccount, toAccount, amount));
         } else if ((amount > 0) && (fromAccount == address(this))) {
-            require(musicFactory.getMusicToken().transfer(contributors[cIdx], amount));
+            require(musicFactory.getMusicToken().transfer(toAccount, amount));
         }
 
         totalEarned += amount; // Moved here for more accurate accounting in case there is coin lost due to contribution ratio rounding down of decimals
