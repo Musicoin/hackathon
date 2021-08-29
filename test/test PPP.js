@@ -388,7 +388,7 @@ describe("PayPerPlay.sol", function () {
     });
     
     
-            // DISTRIBUTE BALANCE (TBD. Currently there are no funds collected for payout using this contract)
+    // DISTRIBUTE BALANCE (TBD. Currently there are no funds collected for payout using this contract)
     describe("PayPerPlay.sol distributeBalance Tests", async function () {
 		it("should distribute the PPP contract balance to the contributors (not the owner)", async function () {
 			let trx = await ppp1.connect(addr5).distributeBalance();
@@ -414,55 +414,75 @@ describe("PayPerPlay.sol", function () {
     });
     
     describe("PayPerPlay.sol Kill Tests", async function () {
-		it("should distribute the PPP contract balance to the contributors (not the owner) and destroy the contract", async function () {
-
-            await expect(ppp1.getContributorsLength()).to.not.be.reverted;
-
+        it("should NOT kill because this is not being called by the owner", async function () {
+            let pp1Address = ppp1.address;
             let trx = await ppp1.connect(addr5).kill(true);
-			await expect(trx.wait()).to.be.reverted; //With('Caller not owner');
+            await expect(trx.wait()).to.be.reverted; //With('Caller not owner');
             trx = await ppp1.connect(addr5).kill(false);
-			await expect(trx.wait()).to.be.reverted; //With('Caller not owner');
+            await expect(trx.wait()).to.be.reverted; //With('Caller not owner');
+            expect(await ethers.provider.getCode(pp1Address)).to.not.be.equal("0x");
+        });
 
-            expect(await musicoinToken.balanceOf(ppp1.address)).to.equal(0);
-			(await musicoinToken.connect(owner).transfer(ppp1.address, 1000)).wait();
-			expect(await musicoinToken.balanceOf(ppp1.address)).to.equal(1000);
+        it("should distribute the PPP contract balance to the contributors (not the owner) and destroy the contract", async function () {
+            // Setup balance for testing
+            let pp1Address = ppp1.address;
+            expect(await musicoinToken.balanceOf(pp1Address)).to.equal(0);
+            (await musicoinToken.connect(owner).transfer(pp1Address, 1000)).wait();
+            expect(await musicoinToken.balanceOf(pp1Address)).to.equal(1000);
 
-			let addr1Balance = await musicoinToken.balanceOf(addr1.address);
-			let addr2Balance = await musicoinToken.balanceOf(addr2.address);
-			let ownerBalance = await musicoinToken.balanceOf(owner.address);
-
-// THIS FAILS - ProviderError: Transaction gas amount is less than the intrinsic gas amount for this transaction type.
+            let addr1Balance = await musicoinToken.balanceOf(addr1.address);
+            let addr2Balance = await musicoinToken.balanceOf(addr2.address);
+            let ownerBalance = await musicoinToken.balanceOf(owner.address);
+            expect(await ethers.provider.getCode(pp1Address)).to.not.be.equal("0x");
             trx = await ppp1.connect(addr1).kill(true);
-			trx.wait();
-			expect(await musicoinToken.balanceOf(ppp1.address)).to.equal(0);
-			expect(addr1Balance).to.equal(await musicoinToken.balanceOf(addr1.address));
-	        //contributors = [addr2.address, owner.address];
-    	    //share = [3, 5];
-			expect(addr2Balance.add(1000/8*3)).to.equal(await musicoinToken.balanceOf(addr2.address));
-			expect(ownerBalance.add(1000/8*5)).to.equal(await musicoinToken.balanceOf(owner.address));
+            trx.wait();
 
-			await expect(ppp1.getContributorsLength()).to.be.reverted;
-	    });    
+            expect(await musicoinToken.balanceOf(pp1Address)).to.equal(0); // emptied and distributed
+            expect(addr1Balance).to.equal(await musicoinToken.balanceOf(addr1.address)); // no change
+            //contributors = [addr2.address, owner.address];
+            //share = [3, 5];
+            expect(addr2Balance.add(1000/8*3)).to.equal(await musicoinToken.balanceOf(addr2.address));
+            expect(ownerBalance.add(1000/8*5)).to.equal(await musicoinToken.balanceOf(owner.address));
+            // need to test the contract doesnt exist by calling any function.  Is there a better way?
+            expect(await ethers.provider.getCode(pp1Address)).to.be.equal("0x");
+        });    
 
-		it("should NOT distribute the PPP contract balance to the contributors and destroy the contract with balance", async function () {
-			(await musicoinToken.transfer(ppp1.address, 1000)).wait();
-			expect(await musicoinToken.balanceOf(ppp1.address)).to.equal(1000);
+        it("should NOT distribute the PPP contract balance to the contributors and destroy the contract with balance", async function () {
+            let pp1Address = ppp1.address;
+            expect(await musicoinToken.balanceOf(pp1Address)).to.equal(0);
+            (await musicoinToken.connect(owner).transfer(pp1Address, 1000)).wait();
+            expect(await musicoinToken.balanceOf(pp1Address)).to.equal(1000);
 
-			let addr1Balance = await musicoinToken.balanceOf(addr1.address);
-			let addr2Balance = await musicoinToken.balanceOf(addr2.address);
-			let ownerBalance = await musicoinToken.balanceOf(owner.address);
+            let addr1Balance = await musicoinToken.balanceOf(addr1.address);
+            let addr2Balance = await musicoinToken.balanceOf(addr2.address);
+            let ownerBalance = await musicoinToken.balanceOf(owner.address);
 
-// THIS FAILS - ProviderError: Transaction gas amount is less than the intrinsic gas amount for this transaction type.
+            expect(await ethers.provider.getCode(pp1Address)).to.not.be.equal("0x");
             let trx = await ppp1.connect(addr1).kill(false);
-			trx.wait();
-            expect(await musicoinToken.balanceOf(ppp1.address)).to.equal(1000);
-			expect(addr1Balance).to.equal(await musicoinToken.balanceOf(addr1.address));
-	        //contributors = [addr2.address, owner.address];
-    	    //share = [3, 5];
-			expect(addr2Balance).to.equal(await musicoinToken.balanceOf(addr2.address));
-			expect(ownerBalance).to.equal(await musicoinToken.balanceOf(owner.address));
- 			await expect(ppp1.getContributorsLength()).to.be.reverted;
-	    });   
+            trx.wait();
+            // Owner should receive all funds
+            expect(await musicoinToken.balanceOf(pp1Address)).to.equal(0);
+            expect(addr1Balance.add(1000)).to.equal(await musicoinToken.balanceOf(addr1.address));
+            //contributors = [addr2.address, owner.address];
+            //share = [3, 5];
+            expect(addr2Balance).to.equal(await musicoinToken.balanceOf(addr2.address));
+            expect(ownerBalance).to.equal(await musicoinToken.balanceOf(owner.address));
+            // need to test the contract doesnt exist by calling any function.  Is there a better way?
+            expect(await ethers.provider.getCode(pp1Address)).to.be.equal("0x");
+        });   
+ 
+        it("New Music Factory for PPP", async function() {
+            mcFactory2 = await musicoinFactoryContract.deploy(musicoinToken.address);
+            await mcFactory2.deployed();
+    
+            let mcFactoryAddress = await ppp1.getMusicFactoryAddress();
+            let trx = await mcFactory.connect(owner).kill();
+            trx.wait();
+            trx = await ppp1.connect(addr1).updateMusicFactory(mcFactory2.address);
+            trx.wait();
+            expect(mcFactoryAddress).to.not.be.equal(await ppp1.getMusicFactoryAddress());
+            expect(mcFactory2.address).to.be.equal(await ppp1.getMusicFactoryAddress());
+        });
 	});
 });
 
