@@ -3,11 +3,11 @@ How to use this script
 
 #### Hardhat config
 `npm i`
-npm install dotenv
-npm install mongoose
-npm i bcrypt-nodejs
-npm i fastest-validator
-npm install web3
+`npm install dotenv`
+`npm install mongoose`
+`npm i bcrypt-nodejs`
+`npm i fastest-validator`
+`npm install web3`
 
 #### To deploy Artist contract (10 at a time) run below in terminal
 `npx hardhat --network <network> run ./scripts/migrate-Artist.js`
