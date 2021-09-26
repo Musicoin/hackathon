@@ -8,8 +8,8 @@ module.exports = mongoose.Schema({
     default: 'pending',
     index: true
   },
-  resourceUrl : String,
-  contentType : String,
+  resourceUrl: String,
+  contentType: String,
   artist: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -38,6 +38,7 @@ module.exports = mongoose.Schema({
   pendingUpdateTxs: Object,
   votes: Object,
   //for migration
-  migrated : Boolean
+  migrated: Boolean,
+  contractAddress_2018Chain: String
 });
 //# sourceMappingURL=release.js.map
