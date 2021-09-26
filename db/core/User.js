@@ -1,6 +1,6 @@
 const mongoose = require('mongoose'),
-      bcrypt =  require( 'bcrypt-nodejs'),
-      Validator = require( 'fastest-validator');
+  bcrypt = require('bcrypt-nodejs'),
+  Validator = require('fastest-validator');
 
 let v = new Validator();
 let emailSchema = {
@@ -10,9 +10,9 @@ let emailSchema = {
 const userSchema = mongoose.Schema({
   profileAddress: String,
   //for migrated contracts
-  migrated : Boolean,
-  contractAddress: String,
-  
+  migrated: Boolean,
+  profileAddress_2018Chain: String,
+
   updatePending: {
     type: Boolean,
     index: true,
