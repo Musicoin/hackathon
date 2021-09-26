@@ -1,5 +1,10 @@
+require('dotenv').config();
 require("@nomiclabs/hardhat-ethers");
 require("@nomiclabs/hardhat-waffle");
+
+let privateKey =  process.env.PRIVATE_KEY;
+let skale = process.env.SKALE_ENDPOINT
+
 
 module.exports = {
   defaultNetwork: "skale",
@@ -26,6 +31,7 @@ module.exports = {
     }
   }
 };
+
 /**
 SKALE TestNet
 S-Chain Name
