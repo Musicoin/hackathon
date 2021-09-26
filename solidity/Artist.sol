@@ -7,23 +7,23 @@ import "./MUSIC_Schain.sol";
 contract Artist {
     MusicFactory public musicFactory;
 
-    string public contractVersion = "v0.3"; //rw what version does this now need to be?
-    
+    string public contractVersion = "v1.20210924"; //rw what version does this now need to be?
+
     address public owner;
-   	address public createdBy;
- 
-   	string public artistName;
+    address public createdBy;
 
-  	string public imageUrl;
-   	string public descriptionUrl;
-   	string public socialUrl;
+    string public artistName;
 
-    uint public tipCount = 0;
-    uint public tipTotal = 0;
+    string public imageUrl;
+    string public descriptionUrl;
+    string public socialUrl;
+
+    uint256 public tipCount = 0;
+    uint256 public tipTotal = 0;
     mapping(address => bool) public following;
-    uint public followers = 0;
+    uint256 public followers = 0;
 
-    modifier onlyOwner {
+    modifier onlyOwner() {
         require(msg.sender == owner, "Caller is not owner");
         _;
     }
@@ -34,11 +34,18 @@ contract Artist {
      * Address objects will fail by the EVM if not valid.
      * Assumes / requires that this is created using the MusicoinFactory only
      */
-    constructor (address _owner, string memory _artistName, string memory _imageUrl, string memory _descriptionUrl, string memory _socialUrl, address _createdBy) {
-		artistName = _artistName;
-		imageUrl = _imageUrl;
-		descriptionUrl = _descriptionUrl;
-		socialUrl = _socialUrl;
+    constructor(
+        address _owner,
+        string memory _artistName,
+        string memory _imageUrl,
+        string memory _descriptionUrl,
+        string memory _socialUrl,
+        address _createdBy
+    ) {
+        artistName = _artistName;
+        imageUrl = _imageUrl;
+        descriptionUrl = _descriptionUrl;
+        socialUrl = _socialUrl;
         owner = _owner;
         createdBy = _createdBy;
 
@@ -50,9 +57,9 @@ contract Artist {
         selfdestruct(payable(owner));
     }
 
-    event tipping(address tipper, address benefactor, uint tip);
-    
-    function tip(uint _tipAmount) public payable {
+    event tipping(address tipper, address benefactor, uint256 tip);
+
+    function tip(uint256 _tipAmount) public payable {
         tipCount++;
         tipTotal += _tipAmount;
         // User will have to have made an approved allowance with the MusicFactory contract for tipping to work
@@ -74,18 +81,35 @@ contract Artist {
         }
     }
 
-    function payOut(address payable recipient, uint amount) public onlyOwner {
+    function payOut(address payable recipient, uint256 amount)
+        public
+        onlyOwner
+    {
         // updated to send $MUSIC instead of ETH
-        //require(recipient.send(amount), "payout failed"); 
-        require(musicFactory.getMusicToken().transfer(recipient, amount), "payout failed"); //rw why is this sent to the recipient and not the forwardingAddress?
+        //require(recipient.send(amount), "payout failed");
+        require(
+            musicFactory.getMusicToken().transfer(recipient, amount),
+            "payout failed"
+        ); //rw why is this sent to the recipient and not the forwardingAddress?
     }
 
     function payOutBalance(address payable recipient) public onlyOwner {
         // updated to send the $MUSIC balance to the recipient from this contract (owner)
-        require(musicFactory.getMusicToken().transfer(recipient, musicFactory.getMusicToken().balanceOf(address(this))), "payout failed"); 
+        require(
+            musicFactory.getMusicToken().transfer(
+                recipient,
+                musicFactory.getMusicToken().balanceOf(address(this))
+            ),
+            "payout failed"
+        );
     }
 
-    function updateDetails (string memory _artistName, string memory _imageUrl, string memory _descriptionUrl, string memory _socialUrl) public onlyOwner {
+    function updateDetails(
+        string memory _artistName,
+        string memory _imageUrl,
+        string memory _descriptionUrl,
+        string memory _socialUrl
+    ) public onlyOwner {
         artistName = _artistName;
         imageUrl = _imageUrl;
         descriptionUrl = _descriptionUrl;
@@ -99,10 +123,11 @@ contract Artist {
     function updateMusicFactory(MusicFactory _musicFactory) public onlyOwner {
         musicFactory = _musicFactory;
     }
+
     function getMusicFactoryAddress() public view returns (MusicFactory) {
         return musicFactory;
     }
-    
+
     function setArtistName(string memory _artistName) public onlyOwner {
         artistName = _artistName;
     }
