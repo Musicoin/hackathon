@@ -53,7 +53,6 @@ export function makeDeposit() {
       .depositERC20(
           schainName,
           erc20Address,
-          accountForSchain,
           web3ForMainnet.utils.toHex(web3ForMainnet.utils.toWei(amountToSend, "ether"))
       )
       .encodeABI();
