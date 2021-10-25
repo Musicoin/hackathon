@@ -14,7 +14,7 @@ async function main() {
 
     //Get balances from DB which are not migrated yet.  This can be limited for smaller deployment cycles and rerunning will continue to the next batch of balances not migrated.  Set to 1 for dev/test cycles    
     const balances = await dbUser.find({ balance: { $exists: true, $ne: null, $ne: 0 } })
-        .where({ $and: [{ migrating: { $ne: true } }, { migrated: { $ne: true } }] }).limit(10).exec(); // Check both flags and only work with records that have not initiated or completed a migration.  Any initiated but incomplete records need to be resolved manually to prevent double spend
+        .where({ $and: [{ migrating: { $ne: true } }, { migrated: { $ne: true } }, { skipMigration: { $ne: true } }] }).limit(2).exec(); // Check both flags and only work with records that have not initiated or completed a migration.  Any initiated but incomplete records need to be resolved manually to prevent double spend
 
     let deployedBalances;
 
