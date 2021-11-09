@@ -12,7 +12,6 @@ export function makeDeposit() {
       "hex"
   );
   let accountForMainnet = process.env.REACT_APP_INSECURE_ACCOUNT;
-  let accountForSchain = process.env.REACT_APP_INSECURE_ACCOUNT;
 
   let rinkeby = process.env.REACT_APP_INSECURE_RINKEBY;
   let schainName = process.env.REACT_APP_INSECURE_CHAIN_NAME;

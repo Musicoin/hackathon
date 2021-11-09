@@ -2,6 +2,8 @@ import Web3 from "web3";
 import Common from "ethereumjs-common";
 const Tx = require("ethereumjs-tx").Transaction;
 
+const amountToSend = '1000';
+
 export function exit() {
   let schainABIs = require("./contracts/schain_ABIs.json");
   let rinkebyERC20ABI = require("./contracts/rinkeby_ERC20_ABI.json");
@@ -49,7 +51,7 @@ export function exit() {
   let approve = contractERC20.methods
       .approve(
           tokenManagerAddress,
-          web3ForSchain.utils.toHex(web3ForSchain.utils.toWei("1", "ether"))
+          web3ForSchain.utils.toHex(web3ForSchain.utils.toWei(amountToSend, "ether"))
       )
       .encodeABI();
 
@@ -61,7 +63,7 @@ export function exit() {
       .exitToMainERC20(
           erc20AddressOnMainnet,
           accountForMainnet,
-          web3ForSchain.utils.toHex(web3ForSchain.utils.toWei("1", "ether"))
+          web3ForSchain.utils.toHex(web3ForSchain.utils.toWei(amountToSend, "ether"))
       )
       .encodeABI();
 
