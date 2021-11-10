@@ -1637,10 +1637,6 @@
       "payable": false,
       "inputs": [
         {
-          "type": "address",
-          "name": "user"
-        },
-        {
           "type": "string",
           "name": "schainName"
         }
@@ -1884,10 +1880,6 @@
         {
           "type": "string",
           "name": "schainName"
-        },
-        {
-          "type": "address",
-          "name": "user"
         }
       ],
       "outputs": []
@@ -2203,6 +2195,10 @@
         {
           "type": "string",
           "name": "schainName"
+        },
+        {
+          "type": "address",
+          "name": "to"
         }
       ],
       "outputs": []
@@ -2839,6 +2835,10 @@
         {
           "type": "address",
           "name": "erc20OnMainnet"
+        },
+        {
+          "type": "address",
+          "name": "to"
         },
         {
           "type": "uint256",
@@ -3525,6 +3525,10 @@
         {
           "type": "address",
           "name": "erc721OnMainnet"
+        },
+        {
+          "type": "address",
+          "name": "to"
         },
         {
           "type": "uint256",
@@ -4218,6 +4222,10 @@
           "name": "erc1155OnMainnet"
         },
         {
+          "type": "address",
+          "name": "to"
+        },
+        {
           "type": "uint256",
           "name": "id"
         },
@@ -4241,6 +4249,10 @@
         {
           "type": "address",
           "name": "erc1155OnMainnet"
+        },
+        {
+          "type": "address",
+          "name": "to"
         },
         {
           "type": "uint256[]",
