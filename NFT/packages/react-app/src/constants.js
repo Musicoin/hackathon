@@ -88,14 +88,13 @@ export const NETWORKS = {
     faucet: "https://faucet.matic.network/",
     blockExplorer: "https://explorer-mainnet.maticvigil.com//",
   },
-  mumbai: {
-    name: "mumbai",
+  skale: {
+    name: "skale",
     color: "#92D9FA",
-    chainId: 80001,
-    price: 1,
-    gasPrice: 1000000000,
-    rpcUrl: "https://rpc-mumbai.maticvigil.com",
-    faucet: "https://faucet.matic.network/",
-    blockExplorer: "https://mumbai-explorer.matic.today/",
+    chainId: 0x758c251b409fa,
+    gasPrice: 8000000,
+    rpcUrl: "https://dappnet-api.skalenodes.com/v1/elegant-ancha",
+    faucet: "",
+    blockExplorer: "",
   },
 };
