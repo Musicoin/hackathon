@@ -29,7 +29,7 @@ export function rechargePool() {
   // after then can withdraw
 
   let registerMainnetCommunityPool = CommunityPool.methods
-      .rechargeUserWallet(schainName)
+      .rechargeUserWallet(schainName, accountForMainnet)
       .encodeABI();
 
   web3.eth.getTransactionCount(accountForMainnet).then((nonce) => {

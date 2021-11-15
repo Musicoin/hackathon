@@ -60,7 +60,7 @@ export function getBalances() {
       });
 
   CommunityPool.methods
-      .getBalance(schainName)
+      .getBalance(account, schainName)
       .call({ from: account })
       .then((balance) => {
         if (balance === null) {
