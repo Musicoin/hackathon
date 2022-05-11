@@ -22,9 +22,9 @@ module.exports = {
     hardhat: {
     },
     skale: {
-      url: "https://dappnet-api.skalenodes.com/v1/elegant-ancha",
+      url: "https://testnet-proxy.skalenodes.com/v1/whispering-turais",
       accounts: ["PUT 5 TEST ACCOUNT PRIVATE KEYS HERE.  THEY NEED TO BE HOLDING skETH"],
-      chainId: 0x758c251b409fa,
+      chainId: 0x785b4b9847b9,
       timeout: 50000,
       gasPrice: "auto",
       gas: 8000000,

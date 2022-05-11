@@ -105,3 +105,5 @@ dist
 
 # PhpStorm files
 .idea
+
+.env
