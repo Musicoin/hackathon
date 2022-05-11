@@ -2,9 +2,6 @@ require('dotenv').config();
 require("@nomiclabs/hardhat-ethers");
 require("@nomiclabs/hardhat-waffle");
 
-let privateKey =  process.env.PRIVATE_KEY;
-let skale = process.env.SKALE_ENDPOINT
-
 
 module.exports = {
   defaultNetwork: "skale",
@@ -17,13 +14,18 @@ module.exports = {
       }
     }
   },
-
+  paths: {
+    sources: "./solidity",
+    tests: "./test",
+    cache: "./cache",
+    artifacts: "./artifacts"
+  },
   networks: {
     hardhat: {
     },
     skale: {
-      url: "https://testnet-proxy.skalenodes.com/v1/whispering-turais",
-      accounts: ["PUT 5 TEST ACCOUNT PRIVATE KEYS HERE.  THEY NEED TO BE HOLDING skETH"],
+      url: process.env.SKALE_ENDPOINT,
+      accounts: [process.env.PRIVATE_KEY],
       chainId: 0x785b4b9847b9,
       timeout: 50000,
       gasPrice: "auto",
@@ -31,20 +33,3 @@ module.exports = {
     }
   }
 };
-
-/**
-SKALE TestNet
-S-Chain Name
-elegant-ancha
-
-Chain ID
-0x758c251b409fa
-(converted to decimal: 2067916454627834)
-
-HTTPS Load Balancer Endpoint
-https://dappnet-api.skalenodes.com/v1/elegant-ancha
-
-WebSocket Endpoints
-ws://dappnet-v2-15.skalenodes.com:10066
-wss://dappnet-v2-15.skalenodes.com:10071﻿
-*/
