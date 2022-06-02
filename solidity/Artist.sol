@@ -1,78 +1,69 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./MUSICWrapper.sol";
+import "./MUSICFactory.sol";
 import "./MUSIC_Schain.sol";
 
-contract Artist is MUSICWrapper {
-    Music public musicToken;
+contract Artist {
+    MusicFactory public musicFactory;
 
-    string public contractVersion = "v0.3"; //rw what version does this now need to be?
+    string public contractVersion = "v1.20210924"; //rw what version does this now need to be?
+
     address public owner;
     address public createdBy;
-    address payable public forwardingAddress;  //rw is this only for sending coin to an address when the. receive function is used?
+
     string public artistName;
+
     string public imageUrl;
     string public descriptionUrl;
     string public socialUrl;
 
-    uint public tipCount = 0;
-    uint public tipTotal = 0;
+    uint256 public tipCount = 0;
+    uint256 public tipTotal = 0;
     mapping(address => bool) public following;
-    uint public followers = 0;
+    uint256 public followers = 0;
 
-    modifier onlyOwner {
+    modifier onlyOwner() {
         require(msg.sender == owner, "Caller is not owner");
         _;
     }
 
-    // "0xca35b7d915458ef540ade6068dfe2f44e8fa733c", "Test", "Test", "Test", "test"
-    
     /**
      * Constructor for the Artist contract.
      * Assumes validation logic for artist details is managed by the Music player application.
      * Address objects will fail by the EVM if not valid.
+     * Assumes / requires that this is created using the MusicoinFactory only
      */
-    constructor (
+    constructor(
         address _owner,
         string memory _artistName,
         string memory _imageUrl,
         string memory _descriptionUrl,
-        string memory _socialUrl) {
-            
-        owner = _owner;
-        createdBy = msg.sender;
+        string memory _socialUrl,
+        address _createdBy
+    ) {
         artistName = _artistName;
         imageUrl = _imageUrl;
         descriptionUrl = _descriptionUrl;
         socialUrl = _socialUrl;
-        forwardingAddress = payable(address(0));
-        musicToken = getMusicToken();
+        owner = msg.sender; //deployer should be the owner, MusicFactory in our case
+        createdBy = _createdBy;
+
+        musicFactory = MusicFactory(msg.sender);
     }
 
-    receive () external payable {
-        // accept payments
-        //rw: This accepts ETH payments.  The tip function receives $MUSIC so the payouts need to handle both tokens
-        //rw: Can this function be removed since we dont need ETH anymore?  The ETH EVN documentation seems to indicate this is a required function though
-        //https://docs.soliditylang.org/en/v0.6.1/contracts.html
-        
-        // Receive ETH if it is not from the benefactor of this contract, the forwardingAddress
-        if (forwardingAddress != address(0)) {
-            if (!forwardingAddress.send(msg.value)) {
-                // ok, just hold onto it in this contract
-            }
-        }
+    function kill() public onlyOwner {
+        payOutBalance(payable(owner));
+        selfdestruct(payable(owner));
     }
 
-    event tipping(address tipper, address benefactor, uint tip);
-    
-    function tip(uint _tipAmount) public payable {
+    event tipping(address tipper, address benefactor, uint256 tip);
+
+    function tip(uint256 _tipAmount) public payable {
         tipCount++;
         tipTotal += _tipAmount;
-        //tipTotal += msg.value;  //rw removed. The tip will now be in $MUSIC, not ETH.
-        //rw this does not collect any ETH sent with the msg.value object.  Assuming that will not happen from the UI/PlayerApp
-        //rw transferFrom will check the sender's wallet has enough $MUSIC to tip and then sends it to the owner of this contract
-        require(musicToken.transferFrom(msg.sender, owner, _tipAmount)); //rw why is this sent to the owner and not the forwardingAddress?
+        // User will have to have made an approved allowance with the MusicFactory contract for tipping to work
+        require(musicFactory.transferFrom(msg.sender, owner, _tipAmount));
         emit tipping(msg.sender, owner, _tipAmount);
     }
 
@@ -90,40 +81,51 @@ contract Artist is MUSICWrapper {
         }
     }
 
-    function payOut(address payable recipient, uint amount) public onlyOwner {
-        //rw updated to send $MUSIC instead of ETH
-        //require(recipient.send(amount), "payout failed"); 
-        require(musicToken.transfer(recipient, amount), "payout failed"); //rw why is this sent to the recipient and not the forwardingAddress?
+    function payOut(address payable recipient, uint256 amount)
+        public
+        onlyOwner
+    {
+        // updated to send $MUSIC instead of ETH
+        //require(recipient.send(amount), "payout failed");
+        require(
+            musicFactory.getMusicToken().transfer(recipient, amount),
+            "payout failed"
+        ); //rw why is this sent to the recipient and not the forwardingAddress?
     }
 
     function payOutBalance(address payable recipient) public onlyOwner {
-        //rw Although should only be using $MUSIC, the fallback receive function accepts ETH, so this pay out function will return the total balance of both ETH and $MUSIC
-        require (recipient.send(address(this).balance), "payout balance failed");
-        //rw updated to send the $MUSIC balance to the recipient from this contract (owner) as well
-        require(musicToken.transfer(recipient, musicToken.balanceOf(owner)), "payout failed"); //rw why is this sent to the recipient and not the forwardingAddress?
+        // updated to send the $MUSIC balance to the recipient from this contract (owner)
+        require(
+            musicFactory.getMusicToken().transfer(
+                recipient,
+                musicFactory.getMusicToken().balanceOf(address(this))
+            ),
+            "payout failed"
+        );
     }
 
-    function updateDetails (
+    function updateDetails(
         string memory _artistName,
         string memory _imageUrl,
         string memory _descriptionUrl,
-        string memory _socialUrl) public onlyOwner {
+        string memory _socialUrl
+    ) public onlyOwner {
         artistName = _artistName;
         imageUrl = _imageUrl;
         descriptionUrl = _descriptionUrl;
         socialUrl = _socialUrl;
     }
 
-    function removeForwardingAddress() public onlyOwner {
-        forwardingAddress = payable(address(0));
-    }
-
-    function setForwardingAddress(address payable _forwardingAddress) public onlyOwner {
-        forwardingAddress = _forwardingAddress;
-    }
-
     function setOwner(address _owner) public onlyOwner {
         owner = _owner;
+    }
+
+    function updateMusicFactory(MusicFactory _musicFactory) public onlyOwner {
+        musicFactory = _musicFactory;
+    }
+
+    function getMusicFactoryAddress() public view returns (MusicFactory) {
+        return musicFactory;
     }
 
     function setArtistName(string memory _artistName) public onlyOwner {

@@ -1,6 +1,7 @@
-import mongoose from 'mongoose';
-import bcrypt from 'bcrypt-nodejs';
-import Validator from 'fastest-validator';
+const mongoose = require('mongoose'),
+  bcrypt = require('bcrypt-nodejs'),
+  Validator = require('fastest-validator');
+
 let v = new Validator();
 let emailSchema = {
   email: { type: "email" }
@@ -9,9 +10,9 @@ let emailSchema = {
 const userSchema = mongoose.Schema({
   profileAddress: String,
   //for migrated contracts
-  migrated : Boolean,
-  contractAddress: String,
-  
+  migrated: Boolean,
+  profileAddress_2018Chain: String,
+
   updatePending: {
     type: Boolean,
     index: true,
@@ -185,5 +186,5 @@ userSchema.methods.validPassword = function (password) {
   return bcrypt.compareSync(password, this.local.password);
 };
 // create the model for users and expose it to our app
-export default userSchema;
+module.exports = userSchema;
 //# sourceMappingURL=user.js.map

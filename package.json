@@ -1,0 +1,21 @@
+{
+  "name": "hardhat-project",
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "chai": "^4.3.4",
+    "ethereum-waffle": "^3.4.0",
+    "ethers": "^5.4.1",
+    "hardhat": "^2.4.3",
+    "ts-node": "^10.2.0"
+  },
+  "dependencies": {
+    "@ethersproject/experimental": "^5.5.0",
+    "bcrypt-nodejs": "^0.0.3",
+    "bignumber.js": "^9.0.1",
+    "dotenv": "^10.0.0",
+    "fastest-validator": "^1.11.1",
+    "mongoose": "^6.0.4",
+    "web3": "^1.5.3"
+  }
+}
