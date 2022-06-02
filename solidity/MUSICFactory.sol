@@ -5,6 +5,9 @@ import "./MUSIC_Schain.sol";
 import "./Artist.sol";
 import "./PayPerPlay.sol";
 
+//ToDo: add team roles, 1 owner and a list of addresses that are allowed to send tokens on behalf of the artist contracts
+//ToDo: add function to remove team roles in case we want to change which addresses have access
+
 contract MusicFactory {
     string public constant contractVersion = "v1.20210924";
 
@@ -82,6 +85,7 @@ contract MusicFactory {
         string memory _socialUrl
     ) public {
         Artist newArtist = new Artist(
+        //ToDo: owner should be set to this contract
             _owner,
             _artistName,
             _imageUrl,
@@ -121,6 +125,7 @@ contract MusicFactory {
         uint256[] memory _contributorShares
     ) public {
         PayPerPlay newPPP = new PayPerPlay(
+        //ToDo: owner should be set to this contract
             _owner,
             _title,
             _artistName,

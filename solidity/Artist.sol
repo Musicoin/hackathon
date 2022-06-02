@@ -46,7 +46,7 @@ contract Artist {
         imageUrl = _imageUrl;
         descriptionUrl = _descriptionUrl;
         socialUrl = _socialUrl;
-        owner = _owner;
+        owner = msg.sender; //deployer should be the owner, MusicFactory in our case
         createdBy = _createdBy;
 
         musicFactory = MusicFactory(msg.sender);
