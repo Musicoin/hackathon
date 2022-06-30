@@ -32,8 +32,10 @@ async function main() {
     const dbRelease = connection.model('Release', ReleaseSchema); // PPP
     //Get artists from DB which are not deployed yet.  This can be limited for smaller deployment cycles and rerunning will continue to the next batch of undeployed artists.  Set to 1 for dev/test cycles    
     const artists = await dbUser.find({ profileAddress: { $exists: true, $ne: null } })
-        .where({ mostRecentReleaseDate: { $exists: true, $ne: null }, migrated: { $ne: true }, ownerAddress: { $exists: true } })
-        // .limit(1)
+        // 2022-06-20 filter by mostRecentReleaseDate to only pickup artists that have songs for migration.  This line removed because all users are Artist accounts and need migration
+        //.where({ mostRecentReleaseDate: { $exists: true, $ne: null }, migrated: { $ne: true }, ownerAddress: { $exists: true } })
+        .where({migrated: { $ne: true }, ownerAddress: { $exists: true } })
+    // .limit(1)
         .exec();
 
     let deployedArtists;
@@ -73,7 +75,7 @@ async function main() {
         /*************/
         // Migrate all the PPP contracts for the artist that was just migrated.  There will be 0 to n PPP contracts to migrate for each artist
 
-        let releases = await dbRelease.find({ artistAddress: oldArtistAddress }).where({ migrated: { $ne: true } }).exec();
+        let releases = await dbRelease.find({ artistAddress: oldArtistAddress }).where({ migrated: { $ne: true }, state: { $ne: "error" } }).exec();
         let deployRel;
 
         for (let eleRelease of releases) {
@@ -121,6 +123,8 @@ async function main() {
 main()
     .then(() => process.exit(0))
     .catch(error => {
+        let abortTime = new Date();
+        console.log("Aborted timestamp: ", abortTime.toUTCString());
         console.error(error);
         process.exit(1);
     });
