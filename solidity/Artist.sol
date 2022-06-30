@@ -3,11 +3,15 @@ pragma solidity ^0.8.0;
 
 import "./MUSICFactory.sol";
 import "./MUSIC_Schain.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract Artist {
+contract Artist is AccessControl {
     MusicFactory public musicFactory;
 
-    string public contractVersion = "v1.20210924"; //rw what version does this now need to be?
+    string public constant contractVersion = "v1.20220624"; // Updated for including Zepplin Roles
+    // string public constant contractVersion = "v1.20210924";  // First major release on Skale
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 public constant WALLET_ADMIN_ROLE = keccak256("WALLET_ADMIN_ROLE");
 
     address public owner;
     address public createdBy;
@@ -24,7 +28,11 @@ contract Artist {
     uint256 public followers = 0;
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "Caller is not owner");
+        require(hasRole(ADMIN_ROLE, msg.sender), "Caller is not the owner/admin");
+        _;
+    }
+    modifier walletAdminOnly() {
+        require(hasRole(WALLET_ADMIN_ROLE, msg.sender), "Caller is not the wallet admin");
         _;
     }
 
@@ -46,10 +54,23 @@ contract Artist {
         imageUrl = _imageUrl;
         descriptionUrl = _descriptionUrl;
         socialUrl = _socialUrl;
-        owner = msg.sender; //deployer should be the owner, MusicFactory in our case
+        // 202206 Admin role setup
+        _setupRole(ADMIN_ROLE, msg.sender);
+        owner = _owner;
+        grantRole(ADMIN_ROLE, owner);
         createdBy = _createdBy;
 
         musicFactory = MusicFactory(msg.sender);
+    }
+    // Added 202206
+    function grantWalletAdmin(address _walletAdmin) public adminOnly {
+        grantRole(WALLET_ADMIN_ROLE, _walletAdmin);
+        emit grantWalletAdminEvent(oldWalletAdmin, _walletAdmin);
+    }
+    // Added 202206
+    function revokeWalletAdmin(address _walletAdmin) public adminOnly {
+        revokeRole(WALLET_ADMIN_ROLE, _walletAdmin);
+        emit revokeWalletAdminEvent(_walletAdmin);
     }
 
     function kill() public onlyOwner {
@@ -83,7 +104,7 @@ contract Artist {
 
     function payOut(address payable recipient, uint256 amount)
         public
-        onlyOwner
+        walletAdminOnly
     {
         // updated to send $MUSIC instead of ETH
         //require(recipient.send(amount), "payout failed");
@@ -93,7 +114,7 @@ contract Artist {
         ); //rw why is this sent to the recipient and not the forwardingAddress?
     }
 
-    function payOutBalance(address payable recipient) public onlyOwner {
+    function payOutBalance(address payable recipient) public walletAdminOnly {
         // updated to send the $MUSIC balance to the recipient from this contract (owner)
         require(
             musicFactory.getMusicToken().transfer(
@@ -117,7 +138,11 @@ contract Artist {
     }
 
     function setOwner(address _owner) public onlyOwner {
+        address oldOwner = owner;
         owner = _owner;
+        grantRole(ADMIN_ROLE, _owner);
+        // 202206 If there should only be one user type owner then remove the old one.  This does not remove the Musicoin owner that was added in construction
+        revokeRole(ADMIN_ROLE, oldOwner);
     }
 
     function updateMusicFactory(MusicFactory _musicFactory) public onlyOwner {
