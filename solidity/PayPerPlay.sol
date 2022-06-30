@@ -3,11 +3,16 @@ pragma solidity ^0.8.0;
 import "./MUSIC_Schain.sol";
 import "./MUSICFactory.sol";
 import "./utils/SafeMath.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract PayPerPlay {
+contract PayPerPlay is AccessControl {
     using SafeMath for uint256;
 
-    string public constant contractVersion = "v1.20210924";
+    string public constant contractVersion = "v1.20220624"; // Updated for including Zepplin Roles
+    // string public constant contractVersion = "v1.20210924";  // First major release on Skale
+
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 public constant WALLET_ADMIN_ROLE = keccak256("WALLET_ADMIN_ROLE");
 
     MusicFactory public musicFactory;
     address public owner;
@@ -42,6 +47,8 @@ contract PayPerPlay {
     event tipEvent(uint256 plays, uint256 tipCount);
     event licenseUpdateEvent(uint256 version);
     event transferEvent(address oldOwner, address newOwner);
+    event grantWalletAdminEvent(address walletAdmin);
+    event revokeWalletAdminEvent(address walletAdmin);
     event resourceUpdateEvent(string oldResource, string newResource);
     event titleUpdateEvent(string oldTitle, string newTitle);
     event artistNameUpdateEvent(string oldArtistName, string newArtistName);
@@ -77,17 +84,25 @@ contract PayPerPlay {
         metadataUrl = _metadataUrl;
         imageUrl = _imageUrl;
 
-        // allow to call this function once during initialization
-        owner = msg.sender;
+        // Update licenses as the msg.sender / creator of this contract before transfering ownership to the "owner" address
+        _setupRole(ADMIN_ROLE, msg.sender);
+ 
         updateLicense(_musicPerPlay, _contributors, _contributorShares);
 
         // setting the real owner needs to be called separately now. The constructor has too many parameters.  Assuming it is the _createdBy address.
         owner = _owner;
+        // 202206 Adding role based security for owner
+        grantRole(ADMIN_ROLE, owner);
         musicFactory = MusicFactory(msg.sender);
     }
 
     modifier adminOnly() {
-        require(msg.sender == owner, "Caller not owner");
+        require(hasRole(ADMIN_ROLE, msg.sender), "Caller is not the admin");
+        _;
+    }
+
+    modifier walletAdminOnly() {
+        require(hasRole(WALLET_ADMIN_ROLE, msg.sender), "Caller is not the wallet admin");
         _;
     }
 
@@ -117,11 +132,25 @@ contract PayPerPlay {
     }
 
     /*** Admin functions ***/
-
+    // 202206 This still retains the original creator as the Admin in the roles and only changes the user owner
     function transferOwnership(address newOwner) public adminOnly {
         address oldOwner = owner;
         owner = newOwner;
+        // Added 202206
+        grantRole(ADMIN_ROLE, newOwner);
+        renounceRole(ADMIN_ROLE, oldOwner);
         emit transferEvent(oldOwner, newOwner);
+    }
+
+    // Added 202206
+    function grantWalletAdmin(address _walletAdmin) public adminOnly {
+        grantRole(WALLET_ADMIN_ROLE, _walletAdmin);
+        emit grantWalletAdminEvent(oldWalletAdmin, _walletAdmin);
+    }
+    // Added 202206
+    function revokeWalletAdmin(address _walletAdmin) public adminOnly {
+        revokeRole(WALLET_ADMIN_ROLE, _walletAdmin);
+        emit revokeWalletAdminEvent(_walletAdmin);
     }
 
     function updateMusicFactory(MusicFactory _musicFactory) public adminOnly {
@@ -206,7 +235,8 @@ contract PayPerPlay {
         emit licenseUpdateEvent(licenseVersion);
     }
 
-    function distributeBalance() public adminOnly {
+    // 202206 changed to only allow walletAdmin to work with payments
+    function distributeBalance() public walletAdminOnly {
         distributePayment(
             musicFactory.getMusicToken().balanceOf(address(this)),
             address(this)
